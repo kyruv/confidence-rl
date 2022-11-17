@@ -11,7 +11,7 @@ public class Perception : MonoBehaviour
     private Dictionary<string, Vector3> rayCastDirections = new Dictionary<string, Vector3>();
     private Dictionary<string, float> tagMapping = new Dictionary<string, float>();
 
-
+    private bool isTouchingTennisball;
 
 
     // Start is called before the first frame update
@@ -34,6 +34,22 @@ public class Perception : MonoBehaviour
         GetPerception();
     }
 
+    void OnTriggerEnter(Collider other)
+    {
+        if(other.gameObject.tag == "tennisball")
+        {
+            isTouchingTennisball = true;
+        }
+    }
+
+    void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject.tag == "tennisball")
+        {
+            isTouchingTennisball = false;
+        }
+    }
+
     public List<float> GetPerception()
     {
         // Left distance, Left object, Left confidence, Forward distance, ...
@@ -44,6 +60,17 @@ public class Perception : MonoBehaviour
         layerMask = ~layerMask;
 
         Vector3 origin = new Vector3(transform.position.x, .75f, transform.position.z);
+
+        if (isTouchingTennisball)
+        {
+            perceptions.Add(1f);
+        } else
+        {
+            perceptions.Add(0f);
+        }
+
+        perceptions.Add(transform.position.x);
+        perceptions.Add(transform.position.z);
 
         RaycastHit hit;
         if (Physics.Raycast(origin, transform.TransformDirection(rayCastDirections["left"]), out hit, 200f, layerMask))

@@ -4,24 +4,32 @@ using UnityEngine;
 
 public class ManualMovement : MonoBehaviour
 {
-    private CharacterController _controller;
-    private float _playerSpeed = 4.0f;
-    private float _rotationSpeed = 120;
+    private StepResolver _step;
 
     // Start is called before the first frame update
     void Start()
     {
-        _controller = gameObject.AddComponent<CharacterController>();
+        _step = GetComponent<StepResolver>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        Vector3 rotation = new Vector3(Input.GetAxisRaw("Horizontal") * _rotationSpeed * Time.deltaTime, 0, 0);
-
-        Vector3 move = new Vector3(0, -Input.GetAxisRaw("Vertical") * Time.deltaTime, 0);
-        move = transform.TransformDirection(move);
-        _controller.Move(move * _playerSpeed);
-        transform.Rotate(rotation);
+        List<float> perception = null;
+        if (Input.GetAxisRaw("Horizontal") > 0)
+        {
+            perception = _step.Step(Action.ROTATE_RIGHT);
+        }
+        else if(Input.GetAxisRaw("Horizontal") < 0)
+        {
+            perception = _step.Step(Action.ROTATE_LEFT);
+        } else if(Input.GetAxisRaw("Vertical") > 0)
+        {
+            perception = _step.Step(Action.FORWARD);
+        }
+        if(perception != null && perception[0] == 1f)
+        {
+            _step.Step(Action.RESET);
+        }
     }
 }
