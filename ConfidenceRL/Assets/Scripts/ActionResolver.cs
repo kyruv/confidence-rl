@@ -22,13 +22,13 @@ public class ActionResolver : MonoBehaviour
         switch (a)
         {
             case Action.ROTATE_RIGHT:
-                transform.eulerAngles += right * _rotationSpeed * Time.deltaTime;
+                transform.eulerAngles += right * _rotationSpeed * Time.fixedDeltaTime;
                 break;
             case Action.ROTATE_LEFT:
-                transform.eulerAngles += left * _rotationSpeed * Time.deltaTime;
+                transform.eulerAngles += left * _rotationSpeed * Time.fixedDeltaTime;
                 break;
             case Action.FORWARD:
-                _controller.Move(transform.TransformDirection(forward) * _playerSpeed * Time.deltaTime);
+                _controller.Move(transform.TransformDirection(forward) * _playerSpeed * Time.fixedDeltaTime);
                 break;
             case Action.RESET:
                 float x = Random.Range(5, 95.0f);
@@ -37,7 +37,7 @@ public class ActionResolver : MonoBehaviour
                 transform.position = new Vector3(x, transform.position.y, z);
                 transform.eulerAngles = new Vector3(0, rotation, 90);
                 Physics.SyncTransforms();
-                _controller.Move(forward * Time.deltaTime);
+                _controller.Move(forward * Time.fixedDeltaTime);
                 break;
         }
     }
@@ -48,5 +48,6 @@ public enum Action
     ROTATE_RIGHT = 0,
     ROTATE_LEFT = 1,
     FORWARD = 2,
-    RESET = 3
+    RESET = 3,
+    CONTROL_TOGGLE = 4,
 };

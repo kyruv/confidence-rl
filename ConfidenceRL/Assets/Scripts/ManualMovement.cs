@@ -4,12 +4,12 @@ using UnityEngine;
 
 public class ManualMovement : MonoBehaviour
 {
-    private StepResolver _step;
+    private RLConnection _rlConnection;
 
     // Start is called before the first frame update
     void Start()
     {
-        _step = GetComponent<StepResolver>();
+        _rlConnection = GetComponent<RLConnection>();
     }
 
     // Update is called once per frame
@@ -18,18 +18,14 @@ public class ManualMovement : MonoBehaviour
         List<float> perception = null;
         if (Input.GetAxisRaw("Horizontal") > 0)
         {
-            perception = _step.Step(Action.ROTATE_RIGHT);
+            _rlConnection.QueueAction(Action.ROTATE_RIGHT);
         }
         else if(Input.GetAxisRaw("Horizontal") < 0)
         {
-            perception = _step.Step(Action.ROTATE_LEFT);
+            _rlConnection.QueueAction(Action.ROTATE_LEFT);
         } else if(Input.GetAxisRaw("Vertical") > 0)
         {
-            perception = _step.Step(Action.FORWARD);
-        }
-        if(perception != null && perception[0] == 1f)
-        {
-            _step.Step(Action.RESET);
+            _rlConnection.QueueAction(Action.FORWARD);
         }
     }
 }

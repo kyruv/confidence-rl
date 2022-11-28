@@ -8,6 +8,8 @@ using System.Collections.Concurrent;
 
 public class RLConnection : MonoBehaviour
 {
+    private GameObject _humanControlledText;
+    private ManualMovement _manualMovement;
     private StepResolver _step;
     private ConcurrentQueue<Action> _mainThreadActions = new ConcurrentQueue<Action>();
 
@@ -17,7 +19,15 @@ public class RLConnection : MonoBehaviour
     void Start()
     {
         _step = GetComponent<StepResolver>();
+        _manualMovement = GetComponent<ManualMovement>();
+        _humanControlledText = GameObject.Find("HumanControlledText");
+        _humanControlledText.SetActive(false);
         SetupServer();
+    }
+
+    public void QueueAction(Action a)
+    {
+        _mainThreadActions.Enqueue(a);
     }
 
     private void Update()
@@ -25,6 +35,14 @@ public class RLConnection : MonoBehaviour
         // Handle all callbacks in main thread
         while (_mainThreadActions.Count > 0 && _mainThreadActions.TryDequeue(out Action action))
         {
+            if(action == Action.CONTROL_TOGGLE)
+            {
+                _manualMovement.enabled = !_manualMovement.enabled;
+                _humanControlledText.SetActive(_manualMovement.enabled);
+                SendData(System.Text.Encoding.Default.GetBytes("ack control handoff"));
+                continue;
+            }
+
             List<float> perception = _step.Step(action);
             SendData(System.Text.Encoding.Default.GetBytes(string.Join(",", perception)));
         }
@@ -63,23 +81,27 @@ public class RLConnection : MonoBehaviour
         byte[] recData = new byte[recieved];
         Buffer.BlockCopy(_recieveBuffer, 0, recData, 0, recieved);
 
+        // It is possible to receive multiple commands in one packet. It really only should happen with the keyboard input mode. And if it does then we are safe to just ignore extra commands.
         string command = System.Text.Encoding.Default.GetString(_recieveBuffer);
         command = new string(command.Where(c => !char.IsControl(c)).ToArray());
-        Debug.Log("command received " + command);
-
-        switch (command)
+        char[] commands = command.ToCharArray();
+        char firstCommand = commands[0];
+        switch (firstCommand)
         {
-            case "f":
+            case 'f':
                 _mainThreadActions.Enqueue(Action.FORWARD);
                 break;
-            case "l":
+            case 'l':
                 _mainThreadActions.Enqueue(Action.ROTATE_LEFT);
                 break;
-            case "r":
+            case 'r':
                 _mainThreadActions.Enqueue(Action.ROTATE_RIGHT);
                 break;
-            case "n":
+            case 'n':
                 _mainThreadActions.Enqueue(Action.RESET);
+                break;
+            case 'h':
+                _mainThreadActions.Enqueue(Action.CONTROL_TOGGLE);
                 break;
             default:
                 Debug.Log("Nothing received " + command);
