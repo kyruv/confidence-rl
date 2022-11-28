@@ -29,11 +29,6 @@ public class Perception : MonoBehaviour
         rightCamera = GameObject.Find("RightCamera").GetComponent<Camera>();
     }
 
-    void Update()
-    {
-        GetPerception();
-    }
-
     void OnTriggerEnter(Collider other)
     {
         if(other.gameObject.tag == "tennisball")
@@ -96,7 +91,6 @@ public class Perception : MonoBehaviour
             perceptions.Add(tagMapping[hit.transform.gameObject.tag]);
             perceptions.Add(1f);
         }
-
         return perceptions;
     }
 }
