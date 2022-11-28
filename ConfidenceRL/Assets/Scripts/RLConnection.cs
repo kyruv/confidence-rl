@@ -78,6 +78,9 @@ public class RLConnection : MonoBehaviour
             case "r":
                 _mainThreadActions.Enqueue(Action.ROTATE_RIGHT);
                 break;
+            case "n":
+                _mainThreadActions.Enqueue(Action.RESET);
+                break;
             default:
                 Debug.Log("Nothing received " + command);
                 break;

@@ -16,17 +16,21 @@ while True:
     while 1:
         key_pressed = False
         if keyboard.is_pressed('w'):
-            print('w')
+            print('forward')
             key_pressed = True
             client.send('f'.encode())
         elif keyboard.is_pressed('a'):
-            print('a')
+            print('left')
             key_pressed = True
             client.send('l'.encode())
         elif keyboard.is_pressed('d'):
-            print('d')
+            print('right')
             key_pressed = True
             client.send('r'.encode())
+        elif keyboard.is_pressed('n'):
+            print('new')
+            key_pressed = True
+            client.send('n'.encode())
         elif keyboard.is_pressed('q'):
             print('q')
             client.send("Bye!".encode())
