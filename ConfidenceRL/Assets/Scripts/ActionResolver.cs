@@ -5,8 +5,8 @@ using UnityEngine;
 public class ActionResolver : MonoBehaviour
 {
     private CharacterController _controller;
-    private float _playerSpeed = 3.0f;
-    private float _rotationSpeed = 60;
+    private float _playerSpeed = 12.0f;
+    private float _rotationSpeed = 360;
 
     private Vector3 right = new Vector3(0, 1, 0);
     private Vector3 left = new Vector3(0, -1, 0);

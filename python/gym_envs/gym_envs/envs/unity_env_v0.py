@@ -4,14 +4,17 @@ import numpy as np
 
 class UnityEnv_v0(gym.Env):
 
-    def __init__(self, render_mode=None, unity_sim_client=None, size = 1024):
+    def __init__(self, render_mode=None, unity_sim_client=None, size = 1024, reward_granularity=100):
         self.unity_sim_client = unity_sim_client
         self.size = size
-        self.observation_space = spaces.Box(-100, 500, shape=(13,))
+        self.observation_space = spaces.Box(0, 100, shape=(13,))
         self.action_space = spaces.Discrete(4)
         self.render_mode = render_mode
         self.window = None
         self.clock = None
+
+        self.world_units_per_grid = 100 / reward_granularity 
+        self.reward_grid = np.zeros(shape=(reward_granularity, reward_granularity))
 
         self.is_human_controlling = False
 
@@ -36,7 +39,11 @@ class UnityEnv_v0(gym.Env):
         if obs[0] == 1:
             return 100
         
-        return -1
+        x = obs[1]
+        y = obs[2]
+        
+        # reward places we have not been yet
+        return self.reward_grid[int(x//self.world_units_per_grid)][int(y//self.world_units_per_grid)]
 
     def step(self, action):
         data = None
@@ -53,6 +60,11 @@ class UnityEnv_v0(gym.Env):
             terminated = True
         
         r = self.reward(obs)
+
+        x = obs[1]
+        y = obs[2]
+
+        self.reward_grid[int(x//self.world_units_per_grid)][int(y//self.world_units_per_grid)] -= .1
 
         return obs, r, terminated, False, {}
 
