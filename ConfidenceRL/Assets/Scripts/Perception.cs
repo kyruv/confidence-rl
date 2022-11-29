@@ -66,6 +66,7 @@ public class Perception : MonoBehaviour
 
         perceptions.Add(transform.position.x);
         perceptions.Add(transform.position.z);
+        perceptions.Add(transform.rotation.y);
 
         RaycastHit hit;
         if (Physics.Raycast(origin, transform.TransformDirection(rayCastDirections["left"]), out hit, 200f, layerMask))

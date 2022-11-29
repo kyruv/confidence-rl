@@ -7,6 +7,7 @@ class UnityEnv_v0(gym.Env):
     def __init__(self, render_mode=None, unity_sim_client=None, size = 1024):
         self.unity_sim_client = unity_sim_client
         self.size = size
+        self.observation_space = spaces.Box(-100, 500, shape=(13,))
         self.action_space = spaces.Discrete(4)
         self.render_mode = render_mode
         self.window = None
@@ -25,10 +26,17 @@ class UnityEnv_v0(gym.Env):
         super().reset(seed=seed)
         self.unity_sim_client.send('n'.encode())
         data = self.unity_sim_client.recv(self.size)
-        return data.decode(), {}
+        print(self._getobs(data))
+        return self._getobs(data), {}
+
+    def _getobs(self, data):
+        return np.array(data.decode().split(',')).astype(np.float32)
 
     def reward(self, obs):
-        pass
+        if obs[0] == 1:
+            return 100
+        
+        return -1
 
     def step(self, action):
         data = None
@@ -40,8 +48,8 @@ class UnityEnv_v0(gym.Env):
             data = self.unity_sim_client.recv(self.size)
 
         terminated = False
-        obs = data.decode().split(',')
-        if obs[0] == '1':
+        obs = self._getobs(data)
+        if obs[0] == 1:
             terminated = True
         
         r = self.reward(obs)

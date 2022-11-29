@@ -20,11 +20,9 @@ public class RLConnection : MonoBehaviour
     {
         _step = GetComponent<StepResolver>();
         _manualMovement = GetComponent<ManualMovement>();
-        //_humanControlledText = GameObject.Find("HumanControlledText");
-        //_humanControlledText.SetActive(false);
-        print("here");
+        _humanControlledText = GameObject.Find("HumanControlledText");
+        _humanControlledText.SetActive(false);
         SetupServer();
-        print("there");
     }
 
     public void QueueAction(Action a)
@@ -40,7 +38,7 @@ public class RLConnection : MonoBehaviour
             if(action == Action.CONTROL_TOGGLE)
             {
                 _manualMovement.enabled = !_manualMovement.enabled;
-                //_humanControlledText.SetActive(_manualMovement.enabled);
+                _humanControlledText.SetActive(_manualMovement.enabled);
                 SendData(System.Text.Encoding.Default.GetBytes("ack control handoff"));
                 continue;
             }
