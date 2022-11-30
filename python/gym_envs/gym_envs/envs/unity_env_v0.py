@@ -8,7 +8,7 @@ class UnityEnv_v0(gym.Env):
         self.unity_sim_client = unity_sim_client
         self.size = size
         self.observation_space = spaces.Box(0, 100, shape=(13,))
-        self.action_space = spaces.Discrete(4)
+        self.action_space = spaces.Discrete(3)
         self.render_mode = render_mode
         self.window = None
         self.clock = None
@@ -22,7 +22,6 @@ class UnityEnv_v0(gym.Env):
             0: "f".encode(),
             1: "r".encode(),
             2: "l".encode(),
-            3: "h".encode(),
         }
     
     def reset(self, seed=None, options=None):

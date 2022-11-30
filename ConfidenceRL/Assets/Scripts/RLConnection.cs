@@ -35,6 +35,7 @@ public class RLConnection : MonoBehaviour
         // Handle all callbacks in main thread
         while (_mainThreadActions.Count > 0 && _mainThreadActions.TryDequeue(out Action action))
         {
+            print("Doing action "+ action.ToString());
             if(action == Action.CONTROL_TOGGLE)
             {
                 _manualMovement.enabled = !_manualMovement.enabled;

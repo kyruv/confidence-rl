@@ -2,10 +2,15 @@ import socket
 import gym_envs
 import gym
 import numpy as np
+from collections import deque
+import progressbar
+import random
 
-from keras import Model, Sequential
+from keras import Model, Sequential, Input
 from keras.layers import Dense, Embedding, Reshape
 from keras.optimizers import Adam
+from keras.backend import expand_dims
+from keras.models import load_model
 
 
 host = 'localhost' 
@@ -21,13 +26,14 @@ data = None
 
 
 class Agent:
-    def __init__(self, enviroment, optimizer):
+    def __init__(self, enviroment, optimizer, load_models=True):
         
         # Initialize atributes
-        self._state_size = enviroment.observation_space.n
+        self._state_size = enviroment.observation_space.shape[0]
         self._action_size = enviroment.action_space.n
         self._optimizer = optimizer
         self.environment = enviroment
+        self.episode_return = 0
         
         self.expirience_replay = deque(maxlen=2000)
         
@@ -36,8 +42,13 @@ class Agent:
         self.epsilon = 0.1
         
         # Build networks
-        self.q_network = self._build_compile_model()
-        self.target_network = self._build_compile_model()
+        if load_models:
+            self.q_network = load_model('models/q_network')
+            self.target_network = load_model('models/target_network')
+        else:
+            self.q_network = self._build_compile_model()
+            self.target_network = self._build_compile_model()
+        
         self.align_target_model()
 
     def store(self, state, action, reward, next_state, terminated):
@@ -45,13 +56,11 @@ class Agent:
     
     def _build_compile_model(self):
         model = Sequential()
-        model.add(Embedding(self._state_size, 10, input_length=1))
-        model.add(Reshape((10,)))
-        model.add(Dense(50, activation='relu'))
-        model.add(Dense(50, activation='relu'))
-        model.add(Dense(self._action_size, activation='linear'))
+        model.add(Dense(units=16, input_dim = self._state_size, activation = 'relu', name="hidden_1"))
+        model.add(Dense(units=self._action_size, activation = 'linear', name="actions"))
         
         model.compile(loss='mse', optimizer=self._optimizer)
+
         return model
 
     def align_target_model(self):
@@ -59,31 +68,92 @@ class Agent:
     
     def act(self, state):
         if np.random.rand() <= self.epsilon:
-            return self.enviroment.action_space.sample()
+            return self.environment.action_space.sample()
         
-        q_values = self.q_network.predict(state)
+        q_values = self.q_network.predict(state, verbose=0)
         return np.argmax(q_values[0])
 
     def retrain(self, batch_size):
-        minibatch = np.random.sample(self.expirience_replay, batch_size)
+        minibatch = random.sample(self.expirience_replay, batch_size)
+        q_net_preds = self.q_network.predict(np.array([state[0] for state, _, _, _, _ in minibatch]), verbose=0, batch_size=64)
+        target_net_preds = self.target_network.predict(np.array([next_state[0] for _, _, _, next_state, _ in minibatch]), verbose=0, batch_size=64)
         
-        for state, action, reward, next_state, terminated in minibatch:
+        X = []
+        y = []
+
+        for index, (state, action, reward, next_state, terminated) in enumerate(minibatch):
             
-            target = self.q_network.predict(state)
+            qprediction = q_net_preds[index]
+            targetprediction = target_net_preds[index]
             
             if terminated:
-                target[0][action] = reward
+                qprediction[action] = reward
             else:
-                t = self.target_network.predict(next_state)
-                target[0][action] = reward + self.gamma * np.amax(t)
+                qprediction[action] = reward + self.gamma * np.amax(targetprediction)
             
-            self.q_network.fit(state, target, epochs=1, verbose=0)
+            X.append(state[0])
+            y.append(qprediction)
+            
+        self.q_network.fit(np.array(X), np.array(y), epochs=1, verbose=0)
 
 
-# while True:
-#     client, address = s.accept() 
-#     env = gym.make('UnityEnv-v0', unity_sim_client=client)
-#     print("Client connected.")
+
+client, address = s.accept() 
+environment = gym.make('UnityEnv-v0', unity_sim_client=client)
+print("Client connected.")
+opt = Adam(learning_rate=0.01)
+agent = Agent(enviroment=environment, optimizer=opt, load_models=True)
+batch_size = 64
+num_of_episodes = 5
+timesteps_per_episode = 1000
+agent.q_network.summary()
+
+for e in range(0, num_of_episodes):
+
+    # Reset the enviroment
+    state, _ = environment.reset()
+    state = np.array([state])
+    
+    # Initialize variables
+    reward = 0
+    terminated = False
+
+    bar = progressbar.ProgressBar(maxval=timesteps_per_episode/10, widgets=\
+[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+    bar.start()
+
+    for timestep in range(timesteps_per_episode):
+        # Run Action
+        action = agent.act(state)
+        
+        # Take action    
+        next_state, reward, terminated, _, _ = environment.step(action)
+        agent.episode_return += reward
+        next_state = np.array([next_state])
+        agent.store(state, action, reward, next_state, terminated)
+        
+        state = next_state
+        
+        if terminated:
+            agent.align_target_model()
+            break
+            
+        if len(agent.expirience_replay) > batch_size and timestep % 5 == 0:
+            agent.retrain(batch_size)
+        
+        if timestep%10 == 0:
+            bar.update(timestep/10 + 1)
+
+    
+
+    bar.finish()
+    print("**********************************")
+    print("Episode: {} scored {}".format(e + 1, agent.episode_return))
+    agent.episode_return = 0
+    agent.q_network.save('models/q_network')
+    agent.target_network.save('models/target_network')
+    print("**********************************")
+    
 
 #     while True:
 #         env.reset()
