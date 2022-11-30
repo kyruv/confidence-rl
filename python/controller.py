@@ -104,7 +104,7 @@ print("Client connected.")
 opt = Adam(learning_rate=0.01)
 agent = Agent(enviroment=environment, optimizer=opt, load_models=True)
 batch_size = 64
-num_of_episodes = 5
+num_of_episodes = 500
 timesteps_per_episode = 1000
 agent.q_network.summary()
 
@@ -135,7 +135,6 @@ for e in range(0, num_of_episodes):
         state = next_state
         
         if terminated:
-            agent.align_target_model()
             break
             
         if len(agent.expirience_replay) > batch_size and timestep % 5 == 0:
@@ -144,7 +143,8 @@ for e in range(0, num_of_episodes):
         if timestep%10 == 0:
             bar.update(timestep/10 + 1)
 
-    
+    agent.align_target_model()
+    agent.epsilon -= .0002
 
     bar.finish()
     print("**********************************")

@@ -8,6 +8,8 @@ public class ActionResolver : MonoBehaviour
     private float _playerSpeed = 12.0f;
     private float _rotationSpeed = 360;
 
+
+    private float locked_y_position;
     private Vector3 right = new Vector3(0, 1, 0);
     private Vector3 left = new Vector3(0, -1, 0);
     private Vector3 forward = new Vector3(0, -1, 0);
@@ -15,6 +17,7 @@ public class ActionResolver : MonoBehaviour
     void Start()
     {
         _controller = gameObject.AddComponent<CharacterController>();
+        locked_y_position = transform.position.y;
     }
 
     public void DoAction(Action a)
@@ -40,6 +43,10 @@ public class ActionResolver : MonoBehaviour
                 _controller.Move(forward * Time.fixedDeltaTime);
                 break;
         }
+
+        Vector3 pos = transform.position;
+        pos.y = locked_y_position;
+        transform.position = pos;
     }
 }
 

@@ -13,6 +13,7 @@ class UnityEnv_v0(gym.Env):
         self.window = None
         self.clock = None
 
+        self.reward_granularity = reward_granularity
         self.world_units_per_grid = 100 / reward_granularity 
         self.reward_grid = np.zeros(shape=(reward_granularity, reward_granularity))
 
@@ -28,7 +29,7 @@ class UnityEnv_v0(gym.Env):
         super().reset(seed=seed)
         self.unity_sim_client.send('n'.encode())
         data = self.unity_sim_client.recv(self.size)
-        print(self._getobs(data))
+        self.reward_grid = np.zeros(shape=(self.reward_granularity, self.reward_granularity))
         return self._getobs(data), {}
 
     def _getobs(self, data):
