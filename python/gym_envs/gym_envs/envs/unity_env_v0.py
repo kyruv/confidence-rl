@@ -7,7 +7,7 @@ class UnityEnv_v0(gym.Env):
     def __init__(self, render_mode=None, unity_sim_client=None, size = 1024, reward_granularity=100):
         self.unity_sim_client = unity_sim_client
         self.size = size
-        self.observation_space = spaces.Box(0, 100, shape=(6,))
+        self.observation_space = spaces.Box(0, 100, shape=(7,))
         self.action_space = spaces.Discrete(3)
         self.render_mode = render_mode
         self.window = None

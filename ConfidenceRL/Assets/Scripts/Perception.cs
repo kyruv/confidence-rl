@@ -35,6 +35,11 @@ public class Perception : MonoBehaviour
         tennisbally = tennisball.transform.position.z;
     }
 
+    public void ResetPerception()
+    {
+        isTouchingTennisball = false;
+    }
+
     void OnTriggerEnter(Collider other)
     {
         if(other.gameObject.tag == "tennisball")

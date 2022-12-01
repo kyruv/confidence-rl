@@ -10,6 +10,11 @@ using System.Collections.Concurrent;
 public class RLConnection : MonoBehaviour
 {
     public bool tellBestMoves;
+    public float withinAngle = 15;
+    public float closeEnoughDistance = .5f;
+
+    private NavMeshPath _navMeshPath;
+    private Transform _target;
     
     private GameObject _humanControlledText;
     private ManualMovement _manualMovement;
@@ -25,6 +30,8 @@ public class RLConnection : MonoBehaviour
         _manualMovement = GetComponent<ManualMovement>();
         _humanControlledText = GameObject.Find("HumanControlledText");
         _humanControlledText.SetActive(false);
+        _target = GameObject.Find("TennisBall").transform;
+        _navMeshPath = new NavMeshPath();
         SetupServer();
     }
 
@@ -48,8 +55,65 @@ public class RLConnection : MonoBehaviour
             }
 
             List<float> perception = _step.Step(action);
+
+            if (tellBestMoves)
+            {
+                NavMesh.CalculatePath(transform.position, _target.position, NavMesh.AllAreas, _navMeshPath);
+
+                // Find the waypoint to path towards
+                int bestWayPoint = -1;
+                for (int i = 1; i < _navMeshPath.corners.Length; i++)
+                {
+                    if(Vector3.Distance(transform.position, _navMeshPath.corners[i]) > closeEnoughDistance)
+                    {
+                        bestWayPoint = i;
+                        break;
+                    } 
+                }
+                 
+                if (bestWayPoint != -1)
+                {
+                    float move = calcNextMove(_navMeshPath.corners[bestWayPoint]);
+                    perception.Add(move);
+                } else
+                {
+                    perception.Add(-1);
+                }
+            } else
+            {
+                perception.Add(-1);
+            }
+
+            print("Sending " + string.Join(",", perception));
             SendData(System.Text.Encoding.Default.GetBytes(string.Join(",", perception)));
         }
+    }
+
+    private static float GetAngleOnAxis(Vector3 self, Vector3 other)
+    {
+        float angle = Vector3.Angle(self, other);
+        Vector3 cross = Vector3.Cross(self, other);
+        if (cross.y < 0) angle = -angle;
+        return angle;
+    }
+
+    private float calcNextMove(Vector3 to)
+    {
+        Vector3 idealForward = to - transform.position;
+        idealForward.y = 0;
+        float angle = GetAngleOnAxis(-transform.up, idealForward);
+        // print("OFF BY " + angle);
+
+        if(Math.Abs(angle) < withinAngle)
+        {
+            return 0f;
+        }
+        else if(angle > 0)
+        {
+            return 1f;
+        }
+
+        return 2f;
     }
 
     void OnApplicationQuit()

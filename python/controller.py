@@ -29,7 +29,7 @@ class Agent:
     def __init__(self, enviroment, optimizer, load_models=True):
         
         # Initialize atributes
-        self._state_size = enviroment.observation_space.shape[0] - 1
+        self._state_size = enviroment.observation_space.shape[0] - 2
         self._action_size = enviroment.action_space.n
         self._optimizer = optimizer
         self.environment = enviroment
@@ -43,8 +43,8 @@ class Agent:
         
         # Build networks
         if load_models:
-            self.q_network = load_model('models/q_network')
-            self.target_network = load_model('models/target_network')
+            self.q_network = load_model('models/q_demo_learning')
+            self.target_network = load_model('models/target_demo_learning')
         else:
             self.q_network = self._build_compile_model()
             self.target_network = self._build_compile_model()
@@ -52,7 +52,7 @@ class Agent:
         self.align_target_model()
 
     def store(self, state, action, reward, next_state, terminated):
-        self.expirience_replay.append((state, action, reward, next_state, terminated))
+        self.expirience_replay.append((state, int(action), reward, next_state, terminated))
     
     def _build_compile_model(self):
         model = Sequential()
@@ -67,22 +67,24 @@ class Agent:
         self.target_network.set_weights(self.q_network.get_weights())
     
     def act(self, state):
+        if state[-1] != -1:
+            return state[-1]
+
         if np.random.rand() <= self.epsilon:
             return self.environment.action_space.sample()
         
-        q_values = self.q_network.predict(state, verbose=0)
+        q_values = self.q_network.predict(np.array([state[:-1]]), verbose=0)
         return np.argmax(q_values[0])
 
     def retrain(self, batch_size):
         minibatch = random.sample(self.expirience_replay, batch_size)
-        q_net_preds = self.q_network.predict(np.array([state[0] for state, _, _, _, _ in minibatch]), verbose=0, batch_size=64)
-        target_net_preds = self.target_network.predict(np.array([next_state[0] for _, _, _, next_state, _ in minibatch]), verbose=0, batch_size=64)
+        q_net_preds = self.q_network.predict(np.array([state for state, _, _, _, _ in minibatch]), verbose=0, batch_size=64)
+        target_net_preds = self.target_network.predict(np.array([next_state for _, _, _, next_state, _ in minibatch]), verbose=0, batch_size=64)
         
         X = []
         y = []
 
         for index, (state, action, reward, next_state, terminated) in enumerate(minibatch):
-            
             qprediction = q_net_preds[index]
             targetprediction = target_net_preds[index]
             
@@ -91,12 +93,10 @@ class Agent:
             else:
                 qprediction[action] = reward + self.gamma * np.amax(targetprediction)
             
-            X.append(state[0])
+            X.append(state)
             y.append(qprediction)
-            
+        
         self.q_network.fit(np.array(X), np.array(y), epochs=1, verbose=0)
-
-
 
 client, address = s.accept() 
 environment = gym.make('UnityEnv-v0', unity_sim_client=client)
@@ -112,7 +112,6 @@ for e in range(0, num_of_episodes):
 
     # Reset the enviroment
     state, _ = environment.reset()
-    state = np.array([state[1:]])
     
     # Initialize variables
     reward = 0
@@ -129,8 +128,11 @@ for e in range(0, num_of_episodes):
         # Take action    
         next_state, reward, terminated, _, _ = environment.step(action)
         agent.episode_return += reward
-        next_state = np.array([next_state[1:]])
-        agent.store(state, action, reward, next_state, terminated)
+
+        # cut out the is terminated flag and the move-to-make flag
+        state_trainable = np.array(state[1:-1])
+        next_state_trainable = np.array(next_state[1:-1])
+        agent.store(state_trainable, action, reward, next_state_trainable, terminated)
         
         state = next_state
         
@@ -150,19 +152,6 @@ for e in range(0, num_of_episodes):
     print("**********************************")
     print("Episode: {} scored {}".format(e + 1, agent.episode_return))
     agent.episode_return = 0
-    agent.q_network.save('models/q_network')
-    agent.target_network.save('models/target_network')
+    agent.q_network.save('models/q_demo_learning')
+    agent.target_network.save('models/target_demo_learning')
     print("**********************************")
-    
-
-#     while True:
-#         env.reset()
-#         terminated = False
-#         total_reward = 0
-
-#         while not terminated:
-#             r = 0
-#             action = np.random.randint(0,3)
-#             obs, r, terminated, _, _ = env.step(action)
-#             total_reward+=r
-#             print("action: "+str(action) + " -- obs: "+str(obs))

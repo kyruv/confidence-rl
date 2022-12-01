@@ -8,7 +8,7 @@ public class ActionResolver : MonoBehaviour
 {
     private CharacterController _controller;
     private float _playerSpeed = 12.0f;
-    private float _rotationSpeed = 360;
+    private float _rotationSpeed = 120;
 
     private float locked_y_position;
     private Vector3 right = new Vector3(0, 1, 0);
@@ -44,6 +44,8 @@ public class ActionResolver : MonoBehaviour
                 _controller.Move(transform.TransformDirection(forward) * _playerSpeed * Time.fixedDeltaTime);
                 break;
             case Action.RESET:
+                GetComponent<Perception>().ResetPerception();
+
                 float x = Random.Range(5, 95.0f);
                 float z = Random.Range(5, 95.0f);
                 while(!isValidLocation(x,z)){
