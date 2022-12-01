@@ -13,6 +13,8 @@ public class Perception : MonoBehaviour
 
     private bool isTouchingTennisball;
 
+    private float tennisballx = 0;
+    private float tennisbally = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -27,6 +29,10 @@ public class Perception : MonoBehaviour
         frontCamera = GameObject.Find("FrontCamera").GetComponent<Camera>();
         leftCamera = GameObject.Find("LeftCamera").GetComponent<Camera>();
         rightCamera = GameObject.Find("RightCamera").GetComponent<Camera>();
+
+        GameObject tennisball = GameObject.Find("TennisBall");
+        tennisballx = tennisball.transform.position.x;
+        tennisbally = tennisball.transform.position.z;
     }
 
     void OnTriggerEnter(Collider other)
@@ -67,31 +73,33 @@ public class Perception : MonoBehaviour
         perceptions.Add(transform.position.x);
         perceptions.Add(transform.position.z);
         perceptions.Add(transform.rotation.y);
+        perceptions.Add(tennisballx);
+        perceptions.Add(tennisbally);
 
-        RaycastHit hit;
-        if (Physics.Raycast(origin, transform.TransformDirection(rayCastDirections["left"]), out hit, 200f, layerMask))
-        {
-            Debug.DrawRay(origin, transform.TransformDirection(rayCastDirections["left"]) * hit.distance, Color.yellow);
-            perceptions.Add(hit.distance);
-            perceptions.Add(tagMapping[hit.transform.gameObject.tag]);
-            perceptions.Add(1f);
-        }
+        // RaycastHit hit;
+        // if (Physics.Raycast(origin, transform.TransformDirection(rayCastDirections["left"]), out hit, 200f, layerMask))
+        // {
+        //     Debug.DrawRay(origin, transform.TransformDirection(rayCastDirections["left"]) * hit.distance, Color.yellow);
+        //     perceptions.Add(hit.distance);
+        //     perceptions.Add(tagMapping[hit.transform.gameObject.tag]);
+        //     perceptions.Add(1f);
+        // }
 
-        if (Physics.Raycast(origin, transform.TransformDirection(rayCastDirections["forward"]), out hit, 200f, layerMask))
-        {
-            Debug.DrawRay(origin, transform.TransformDirection(rayCastDirections["forward"]) * hit.distance, Color.yellow);
-            perceptions.Add(hit.distance);
-            perceptions.Add(tagMapping[hit.transform.gameObject.tag]);
-            perceptions.Add(1f);
-        }
+        // if (Physics.Raycast(origin, transform.TransformDirection(rayCastDirections["forward"]), out hit, 200f, layerMask))
+        // {
+        //     Debug.DrawRay(origin, transform.TransformDirection(rayCastDirections["forward"]) * hit.distance, Color.yellow);
+        //     perceptions.Add(hit.distance);
+        //     perceptions.Add(tagMapping[hit.transform.gameObject.tag]);
+        //     perceptions.Add(1f);
+        // }
 
-        if (Physics.Raycast(origin, transform.TransformDirection(rayCastDirections["right"]), out hit, 200f, layerMask))
-        {
-            Debug.DrawRay(origin, transform.TransformDirection(rayCastDirections["right"]) * hit.distance, Color.yellow);
-            perceptions.Add(hit.distance);
-            perceptions.Add(tagMapping[hit.transform.gameObject.tag]);
-            perceptions.Add(1f);
-        }
+        // if (Physics.Raycast(origin, transform.TransformDirection(rayCastDirections["right"]), out hit, 200f, layerMask))
+        // {
+        //     Debug.DrawRay(origin, transform.TransformDirection(rayCastDirections["right"]) * hit.distance, Color.yellow);
+        //     perceptions.Add(hit.distance);
+        //     perceptions.Add(tagMapping[hit.transform.gameObject.tag]);
+        //     perceptions.Add(1f);
+        // }
         return perceptions;
     }
 }

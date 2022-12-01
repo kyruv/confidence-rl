@@ -29,7 +29,7 @@ class Agent:
     def __init__(self, enviroment, optimizer, load_models=True):
         
         # Initialize atributes
-        self._state_size = enviroment.observation_space.shape[0]
+        self._state_size = enviroment.observation_space.shape[0] - 1
         self._action_size = enviroment.action_space.n
         self._optimizer = optimizer
         self.environment = enviroment
@@ -38,8 +38,8 @@ class Agent:
         self.expirience_replay = deque(maxlen=2000)
         
         # Initialize discount and exploration rate
-        self.gamma = 0.6
-        self.epsilon = 0.1
+        self.gamma = 0.9
+        self.epsilon = 0.25
         
         # Build networks
         if load_models:
@@ -112,7 +112,7 @@ for e in range(0, num_of_episodes):
 
     # Reset the enviroment
     state, _ = environment.reset()
-    state = np.array([state])
+    state = np.array([state[1:]])
     
     # Initialize variables
     reward = 0
@@ -129,7 +129,7 @@ for e in range(0, num_of_episodes):
         # Take action    
         next_state, reward, terminated, _, _ = environment.step(action)
         agent.episode_return += reward
-        next_state = np.array([next_state])
+        next_state = np.array([next_state[1:]])
         agent.store(state, action, reward, next_state, terminated)
         
         state = next_state

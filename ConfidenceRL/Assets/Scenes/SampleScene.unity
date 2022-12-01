@@ -120,7 +120,7 @@ NavMeshSettings:
     accuratePlacement: 0
     debug:
       m_Flags: 0
-  m_NavMeshData: {fileID: 0}
+  m_NavMeshData: {fileID: 23800000, guid: 901a21aa7a727c4458e4ec9d06a8d188, type: 2}
 --- !u!1 &262705627
 GameObject:
   m_ObjectHideFlags: 0
@@ -277,8 +277,8 @@ GameObject:
   m_Name: Cube (12)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &331176806
 Transform:
@@ -370,8 +370,8 @@ GameObject:
   m_Name: Cube (4)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &362487611
 Transform:
@@ -603,8 +603,8 @@ GameObject:
   m_Name: Cube (8)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &478822408
 Transform:
@@ -696,8 +696,8 @@ GameObject:
   m_Name: Cube (9)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &495217541
 Transform:
@@ -789,8 +789,8 @@ GameObject:
   m_Name: Cube (15)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &533933966
 Transform:
@@ -1110,7 +1110,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 621629475}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 41.16, y: 0.57, z: 35.4}
+  m_LocalPosition: {x: 44.9, y: 0.57, z: 32.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -1133,7 +1133,7 @@ GameObject:
   m_TagString: obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &641238985
 Transform:
@@ -1226,8 +1226,8 @@ GameObject:
   m_Name: Cube (14)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &686901401
 Transform:
@@ -1319,8 +1319,8 @@ GameObject:
   m_Name: Cube (3)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &976678517
 Transform:
@@ -1414,6 +1414,7 @@ GameObject:
   - component: {fileID: 1002247069}
   - component: {fileID: 1002247070}
   - component: {fileID: 1002247071}
+  - component: {fileID: 1002247072}
   m_Layer: 8
   m_Name: Dog
   m_TagString: Untagged
@@ -1518,7 +1519,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1002247061}
   m_LocalRotation: {x: 0.7071068, y: 0.7071068, z: 0, w: 0}
-  m_LocalPosition: {x: 48.2, y: 2.5, z: 35.7}
+  m_LocalPosition: {x: 52.1, y: 2.5, z: 32}
   m_LocalScale: {x: 3.52, y: 2, z: 2}
   m_Children:
   - {fileID: 365825055}
@@ -1577,6 +1578,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d8bb9d13a3d39e40a5fb4e15869d6d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  tellBestMoves: 0
+--- !u!195 &1002247072
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1002247061}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.50000024
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2.000001
+  m_BaseOffset: 1.0000005
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!1 &1091969823
 GameObject:
   m_ObjectHideFlags: 0
@@ -1593,8 +1617,8 @@ GameObject:
   m_Name: Cube (10)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &1091969824
 Transform:
@@ -1955,8 +1979,8 @@ GameObject:
   m_Name: Cube (11)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &1514369761
 Transform:
@@ -2048,8 +2072,8 @@ GameObject:
   m_Name: Cube (2)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &1516371569
 Transform:
@@ -2141,8 +2165,8 @@ GameObject:
   m_Name: Cube (1)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &1532299841
 Transform:
@@ -2234,8 +2258,8 @@ GameObject:
   m_Name: Cube (13)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &1586967273
 Transform:
@@ -2327,8 +2351,8 @@ GameObject:
   m_Name: Cube
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &1798446760
 Transform:
@@ -2513,8 +2537,8 @@ GameObject:
   m_Name: Cube (7)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &1889241829
 Transform:
@@ -2606,8 +2630,8 @@ GameObject:
   m_Name: Cube (6)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &1981916986
 Transform:
@@ -2773,8 +2797,8 @@ GameObject:
   m_Name: Cube (5)
   m_TagString: obstacle
   m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_NavMeshLayer: 1
+  m_StaticEditorFlags: 8
   m_IsActive: 1
 --- !u!4 &2090704889
 Transform:

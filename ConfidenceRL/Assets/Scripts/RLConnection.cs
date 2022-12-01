@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.AI;
 using System;
 using System.Net.Sockets;
 using System.Net;
@@ -8,6 +9,8 @@ using System.Collections.Concurrent;
 
 public class RLConnection : MonoBehaviour
 {
+    public bool tellBestMoves;
+    
     private GameObject _humanControlledText;
     private ManualMovement _manualMovement;
     private StepResolver _step;

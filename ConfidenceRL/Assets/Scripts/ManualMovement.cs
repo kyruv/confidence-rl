@@ -27,5 +27,9 @@ public class ManualMovement : MonoBehaviour
         {
             _rlConnection.QueueAction(Action.FORWARD);
         }
+        else if(Input.GetAxisRaw("Vertical") < 0)
+        {
+            _rlConnection.QueueAction(Action.RESET);
+        }
     }
 }
