@@ -5,13 +5,18 @@ import numpy as np
 from collections import deque
 import progressbar
 import random
+from datetime import datetime
 
 from keras import Model, Sequential, Input
 from keras.layers import Dense, Embedding, Reshape
 from keras.optimizers import Adam
 from keras.backend import expand_dims
 from keras.models import load_model
+import tensorflow as tf
 
+print(tf.config.list_physical_devices('GPU'))
+# tf.compat.v1.disable_eager_execution()
+print("Eager execution: " + str(tf.executing_eagerly()))
 
 host = 'localhost' 
 port = 50000
@@ -40,6 +45,10 @@ class Agent:
         # Initialize discount and exploration rate
         self.gamma = 0.9
         self.epsilon = 0.25
+
+        # force positive example rate
+        self.positive_episode_rate = .4
+        self.is_doing_positive_example_episode = False
         
         # Build networks
         if load_models:
@@ -67,48 +76,56 @@ class Agent:
         self.target_network.set_weights(self.q_network.get_weights())
     
     def act(self, state):
-        if state[-1] != -1:
+        if self.is_doing_positive_example_episode and state[-1] != -1:
             return state[-1]
 
         if np.random.rand() <= self.epsilon:
             return self.environment.action_space.sample()
         
-        q_values = self.q_network.predict(np.array([state[:-1]]), verbose=0)
+        q_values = self.q_network(np.array([state[1:-1]]), training=False)
         return np.argmax(q_values[0])
 
-    def retrain(self, batch_size):
-        minibatch = random.sample(self.expirience_replay, batch_size)
-        q_net_preds = self.q_network.predict(np.array([state for state, _, _, _, _ in minibatch]), verbose=0, batch_size=64)
-        target_net_preds = self.target_network.predict(np.array([next_state for _, _, _, next_state, _ in minibatch]), verbose=0, batch_size=64)
-        
-        X = []
-        y = []
+    def retrain(self, batch_size, samples=25):
+        for i in range(samples):
 
-        for index, (state, action, reward, next_state, terminated) in enumerate(minibatch):
-            qprediction = q_net_preds[index]
-            targetprediction = target_net_preds[index]
+            minibatch = random.sample(self.expirience_replay, batch_size)
+            q_net_preds = self.q_network.predict(np.array([state for state, _, _, _, _ in minibatch]), verbose=0, batch_size=64)
+            target_net_preds = self.target_network.predict(np.array([next_state for _, _, _, next_state, _ in minibatch]), verbose=0, batch_size=64)
             
-            if terminated:
-                qprediction[action] = reward
-            else:
-                qprediction[action] = reward + self.gamma * np.amax(targetprediction)
+            X = []
+            y = []
+
+            for index, (state, action, reward, next_state, terminated) in enumerate(minibatch):
+                qprediction = q_net_preds[index]
+                targetprediction = target_net_preds[index]
+                
+                if terminated:
+                    qprediction[action] = reward
+                else:
+                    qprediction[action] = reward + self.gamma * np.amax(targetprediction)
+                
+                X.append(state)
+                y.append(qprediction)
             
-            X.append(state)
-            y.append(qprediction)
-        
-        self.q_network.fit(np.array(X), np.array(y), epochs=1, verbose=0)
+            self.q_network.fit(np.array(X), np.array(y), epochs=1, verbose=0)
 
 client, address = s.accept() 
 environment = gym.make('UnityEnv-v0', unity_sim_client=client)
 print("Client connected.")
 opt = Adam(learning_rate=0.01)
 agent = Agent(enviroment=environment, optimizer=opt, load_models=True)
-batch_size = 64
-num_of_episodes = 500
-timesteps_per_episode = 1000
+batch_size = 128
+num_of_episodes = 10000
+timesteps_per_episode = 500
 agent.q_network.summary()
 
 for e in range(0, num_of_episodes):
+
+    if np.random.rand() <= agent.positive_episode_rate:
+        print("Doing positive example")
+        agent.is_doing_positive_example_episode = True
+    else:
+        agent.is_doing_positive_example_episode = False
 
     # Reset the enviroment
     state, _ = environment.reset()
@@ -138,20 +155,24 @@ for e in range(0, num_of_episodes):
         
         if terminated:
             break
-            
-        if len(agent.expirience_replay) > batch_size and timestep % 5 == 0:
-            agent.retrain(batch_size)
         
         if timestep%10 == 0:
             bar.update(timestep/10 + 1)
+    
+    if len(agent.expirience_replay) > batch_size:
+            agent.retrain(batch_size)
 
-    agent.align_target_model()
+    if e % 5 == 0:
+        agent.align_target_model()
     agent.epsilon -= .0002
 
     bar.finish()
     print("**********************************")
     print("Episode: {} scored {}".format(e + 1, agent.episode_return))
-    agent.episode_return = 0
     agent.q_network.save('models/q_demo_learning')
     agent.target_network.save('models/target_demo_learning')
+    if not agent.is_doing_positive_example_episode:
+        with open('models/training_progress.csv','a') as fd:
+            fd.write(','.join([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), str(e), str(agent.epsilon), str(agent.episode_return)]) + '\n')
+    agent.episode_return = 0
     print("**********************************")
