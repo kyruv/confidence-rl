@@ -6,16 +6,17 @@ using UnityEngine.AI;
 
 public class ActionResolver : MonoBehaviour
 {
+    public Vector2 dogRowCol;
+    public Vector2 tennisBallRowCol;
+
     private float _playerSpeed = 8.0f;
     private float _rotationSpeed = 45;
 
     private Vector3[,] grid = new Vector3[5, 12];
     private bool[,] validLocations = new bool[5, 12];
-    private Vector2 dogRowCol;
     private Dictionary<int, Vector2> directionMovement = new Dictionary<int, Vector2>();
 
     private float locked_y_position;
-    private Vector2 tennisBallRowCol;
 
     void Start()
     {

@@ -1,9 +1,13 @@
 import gym
+import gym_envs
 import numpy as np
 import matplotlib.pyplot as plt
+import socket
 
-# row, column, action
-q_table = np.zeros([4,4,4])
+# row, column, rotation, action
+q_table = np.zeros([5,12,8,3])
+
+q_visit_count = np.zeros([5,12,8,3])
 
 # hyperparams
 alpha = .01
@@ -15,64 +19,69 @@ np.random.seed(1)
 
 def get_greedy_action(state, epsilon):
     if np.random.uniform(0,1) < epsilon:
-        return np.random.choice(4, 1)[0]
+        return np.random.randint(0, 3)
     
     best_action, _ = get_best_action_from(state)
     
     return best_action
 
-def get_agent_loc(observation):
-    return (observation['agent'][0], observation['agent'][1])
+def get_agent_space(observation):
+    return (int(observation[1]), int(observation[2]), int(observation[3]//45))
 
 def get_best_action_from(state):
     best_action = None
     best_score = None
-    for action in range(4):
-        action_score = q_table[state[0]][state[1]][action]
+    for action in range(3):
+        action_score = q_table[state[0]][state[1]][state[2]][action]
         if best_score == None or action_score > best_score:
             best_score = action_score
             best_action = action
     return best_action, best_score
 
 def print_policy():
-    policy_print = [[""] * 4 for _ in range(4)]
-    for row in range(4):
-        for col in range(4):
-            best_action, _ = get_best_action_from((row,col))
-            repr = "-"
-            if best_action == 0:
-                repr = "v"
-            elif best_action == 1:
-                repr = ">"
-            elif best_action == 2:
-                repr = "^"
-            else:
-                repr = "<"
-            policy_print[row][col] = repr
+    policy_print = [[[""] * 8 for c in range(12)] for r in range(5)]
+    for row in range(5):
+        for col in range(12):
+            for rot in range(8):
+                best_action, _ = get_best_action_from((row,col,rot))
+                repr = "-"
+                if best_action == 0:
+                    repr = "f"
+                elif best_action == 1:
+                    repr = "r"
+                else:
+                    repr = "l"
+                policy_print[row][col][rot] = repr
             
-    policy_print[0][3] = "-"
-    policy_print[1][3] = "-"
-    policy_print[1][1] = "-"
-    print('\n'.join(' '.join(str(x) for x in row) for row in policy_print))
+    print(policy_print)
     
 def print_best_q_grid():
-    best_q_grid = [[""] * 4 for _ in range(4)]
-    for row in range(4):
-        for col in range(4):
-            _, best_score = get_best_action_from((row,col))
-            best_q_grid[row][col] = "{:.5f}".format(best_score)
-            
-    print('\n'.join(' '.join(str(x) for x in row) for row in best_q_grid))
+    best_q_grid = [[[""] * 8 for c in range(12)] for r in range(5)]
+    for row in range(5):
+        for col in range(12):
+            for rot in range(8):
+                _, best_score = get_best_action_from((row,col,rot))
+                best_q_grid[row][col][rot] = "{:.5f}".format(best_score)
+                 
+    print(best_q_grid)
 
-cell_to_plot = (1,0)
+cell_to_plot = (1,11,0)
 x = [0]
-downy = [0]
 righty = [0]
-upy = [0]
+forwardy = [0]
 lefty = [0]
 epsilony = [1]
 
-env = gym.make('UnityEnv-v0', unity_sim_client=None)
+host = 'localhost' 
+port = 50000
+backlog = 5 
+size = 1024 
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+s.bind((host,port)) 
+s.listen(backlog)
+
+client, address = s.accept() 
+env = gym.make('UnityEnv-v0', unity_sim_client=client)
 epsilon = 1
 for episode in range(1, num_episodes+1):
     epsilon = np.power(1 - episode / num_episodes,5)
@@ -80,22 +89,23 @@ for episode in range(1, num_episodes+1):
         epsilon = 0
     observation, _ = env.reset()
     terminated = False
-    agent_loc = get_agent_loc(observation)
-    
+    agent_loc = get_agent_space(observation)
+    print("Doing episode " + str(episode))
     while not terminated:
         action = get_greedy_action(agent_loc, epsilon)
         observation, reward, terminated, _, _ = env.step(action)
-        new_agent_loc = get_agent_loc(observation)
+        q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] += 1
+
+        new_agent_loc = get_agent_space(observation)
         _, best_score = get_best_action_from(new_agent_loc)
-        old_q_value = q_table[agent_loc[0]][agent_loc[1]][action]
-        q_table[agent_loc[0]][agent_loc[1]][action] = old_q_value + alpha * (reward + gamma * best_score - old_q_value)
+        old_q_value = q_table[agent_loc[0]][agent_loc[1]][agent_loc[2]][action]
+        q_table[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = old_q_value + alpha * (reward + gamma * best_score - old_q_value)
         agent_loc = new_agent_loc
     
     x.append(episode)
-    downy.append(q_table[cell_to_plot[0]][cell_to_plot[1]][0])
-    righty.append(q_table[cell_to_plot[0]][cell_to_plot[1]][1])
-    upy.append(q_table[cell_to_plot[0]][cell_to_plot[1]][2])
-    lefty.append(q_table[cell_to_plot[0]][cell_to_plot[1]][3])
+    forwardy.append(q_table[cell_to_plot[0]][cell_to_plot[1]][cell_to_plot[2]][0])
+    righty.append(q_table[cell_to_plot[0]][cell_to_plot[1]][cell_to_plot[2]][1])
+    lefty.append(q_table[cell_to_plot[0]][cell_to_plot[1]][cell_to_plot[2]][2])
     epsilony.append(epsilon)
 
 
@@ -103,8 +113,7 @@ print("Doing some stuff to figure out what epsilon decay, alpha, and episode cou
 figure, axis = plt.subplots(1, 2)
 axis[0].plot(x, righty, color = 'blue')
 axis[0].plot(x, lefty, color = 'red')
-axis[0].plot(x, upy, color = 'green')
-axis[0].plot(x, downy, color = 'black')
+axis[0].plot(x, forwardy, color = 'green')
 axis[1].plot(x, epsilony, color = 'purple')
 plt.show()
 
