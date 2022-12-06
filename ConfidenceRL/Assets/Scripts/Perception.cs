@@ -11,7 +11,7 @@ public class Perception : MonoBehaviour
     private Dictionary<string, Vector3> rayCastDirections = new Dictionary<string, Vector3>();
     private Dictionary<string, float> tagMapping = new Dictionary<string, float>();
 
-    private bool isTouchingTennisball;
+    private float touchingObject = -1;
 
     private float tennisballx = 0;
     private float tennisbally = 0;
@@ -37,23 +37,27 @@ public class Perception : MonoBehaviour
 
     public void ResetPerception()
     {
-        isTouchingTennisball = false;
+        touchingObject = -1;
     }
 
     void OnTriggerEnter(Collider other)
     {
-        if(other.gameObject.tag == "tennisball")
-        {
-            isTouchingTennisball = true;
-        }
+        touchingObject = tagMapping[other.gameObject.tag];
     }
 
     void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.tag == "tennisball")
-        {
-            isTouchingTennisball = false;
-        }
+         touchingObject = -1;
+    }
+
+    void OnCollisionEnter(Collision other)
+    {
+        touchingObject = tagMapping[other.gameObject.tag];
+    }
+
+    void OnCollisionExit(Collision other)
+    {
+        touchingObject = -1;
     }
 
     public List<float> GetPerception()
@@ -67,13 +71,7 @@ public class Perception : MonoBehaviour
 
         Vector3 origin = new Vector3(transform.position.x, .75f, transform.position.z);
 
-        if (isTouchingTennisball)
-        {
-            perceptions.Add(1f);
-        } else
-        {
-            perceptions.Add(0f);
-        }
+        perceptions.Add(touchingObject);
 
         perceptions.Add(transform.position.x);
         perceptions.Add(transform.position.z);
