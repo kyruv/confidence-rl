@@ -6,73 +6,100 @@ using UnityEngine.AI;
 
 public class ActionResolver : MonoBehaviour
 {
-    private CharacterController _controller;
-    private float _playerSpeed = 12.0f;
-    private float _rotationSpeed = 120;
+    private float _playerSpeed = 8.0f;
+    private float _rotationSpeed = 45;
+
+    private Vector3[,] grid = new Vector3[5, 12];
+    private bool[,] validLocations = new bool[5, 12];
+    private Vector2 dogRowCol;
+    private Dictionary<int, Vector2> directionMovement = new Dictionary<int, Vector2>();
 
     private float locked_y_position;
-    private Vector3 right = new Vector3(0, 1, 0);
-    private Vector3 left = new Vector3(0, -1, 0);
-    private Vector3 forward = new Vector3(0, -1, 0);
-
-    List<List<float>> invalidLocations = new List<List<float>>();
+    private Vector2 tennisBallRowCol;
 
     void Start()
     {
-        _controller = gameObject.AddComponent<CharacterController>();
         locked_y_position = transform.position.y;
 
-        invalidLocations.Add(new List<float> { 12, 48, 80, 90 });
-        invalidLocations.Add(new List<float> { 10, 20, 40, 61 });
-        invalidLocations.Add(new List<float> { 35, 44, 40, 61 });
-        invalidLocations.Add(new List<float> { 58, 67, 40, 61 });
-        invalidLocations.Add(new List<float> { 6, 16, 6, 13 });
-        invalidLocations.Add(new List<float> { 69, 90, 10, 29 });
+        for (int r =0; r<5; r++)
+        {
+            for(int c = 0; c < 12; c++)
+            {
+                grid[r, c] = new Vector3(4.5f + 8f * c, locked_y_position, 4.5f + 8f * r);
+                if((r == 1 && c == 1) || (r == 1 && c == 9) || (r == 2 && c == 9) || (r == 2 && c == 10) || (r == 3 && c == 10) || (r==0 && c== 3) || (r == 1 && c == 3) || (r == 3 && c == 3) || (r == 4 && c == 3))
+                {
+                    validLocations[r, c] = false;
+                } else
+                {
+                    validLocations[r, c] = true;
+                }
+            }
+        }
+
+        directionMovement.Add(0, new Vector2(0, 1));
+        directionMovement.Add(45, new Vector2(-1, 1));
+        directionMovement.Add(90, new Vector2(-1, 0));
+        directionMovement.Add(135, new Vector2(-1, -1));
+        directionMovement.Add(180, new Vector2(0, -1));
+        directionMovement.Add(225, new Vector2(1, -1));
+        directionMovement.Add(270, new Vector2(1, 0));
+        directionMovement.Add(315, new Vector2(1, 1));
+
+        tennisBallRowCol = new Vector2(2, 11);
+        GameObject.Find("TennisBall").transform.position = grid[2, 11];
+
+        DoAction(Action.RESET);
     }
 
     public void DoAction(Action a)
     {
+        transform.eulerAngles = new Vector3(0, (transform.eulerAngles.y) % 360, 90);
         switch (a)
         {
             case Action.ROTATE_RIGHT:
-                transform.eulerAngles += right * _rotationSpeed * Time.fixedDeltaTime;
+                transform.eulerAngles = new Vector3(0, (transform.eulerAngles.y + _rotationSpeed) % 360, 90);
                 break;
             case Action.ROTATE_LEFT:
-                transform.eulerAngles += left * _rotationSpeed * Time.fixedDeltaTime;
+                transform.eulerAngles = new Vector3(0, (transform.eulerAngles.y - _rotationSpeed) % 360, 90);
                 break;
             case Action.FORWARD:
-                _controller.Move(transform.TransformDirection(forward) * _playerSpeed * Time.fixedDeltaTime);
+                Vector2 forwardDir = directionMovement[Mathf.RoundToInt(transform.eulerAngles.y % 360)];
+
+                int potnewr = Mathf.RoundToInt((dogRowCol.x + forwardDir.x));
+                int potnewc = Mathf.RoundToInt((dogRowCol.y + forwardDir.y));
+                if(potnewr >= 0 && potnewr < 5 && potnewc >=0 && potnewc < 12 && validLocations[potnewr, potnewc])
+                {
+                    dogRowCol = new Vector2(potnewr, potnewc);
+                    transform.position = grid[Mathf.RoundToInt(dogRowCol.x), Mathf.RoundToInt(dogRowCol.y)];
+                }
+
                 break;
             case Action.RESET:
-                GetComponent<Perception>().ResetPerception();
+                GetComponent<Perception>().onSameCellAsTennisBall = false;
 
-                float x = Random.Range(5, 95.0f);
-                float z = Random.Range(5, 95.0f);
-                while(!isValidLocation(x,z)){
-                    x = Random.Range(5, 95.0f);
-                    z = Random.Range(5, 95.0f);
+                int r = Random.Range(0, 5);
+                int c = Random.Range(0, 12);
+                while(!validLocations[r, c]){
+                    r = Random.Range(0, 5);
+                    c = Random.Range(0, 12);
                 }
                 
-                float rotation = Random.Range(0f, 360f);
-                transform.position = new Vector3(x, transform.position.y, z);
+                int rotation = Random.Range(0, 8) * 45;
+                transform.position = grid[r, c];
                 transform.eulerAngles = new Vector3(0, rotation, 90);
-                Physics.SyncTransforms();
-                _controller.Move(forward * Time.fixedDeltaTime);
+
+                dogRowCol = new Vector2(r, c);
                 break;
         }
 
         Vector3 pos = transform.position;
         pos.y = locked_y_position;
         transform.position = pos;
-    }
 
-    private bool isValidLocation(float x, float y){
-        foreach(List<float> il in invalidLocations){
-            if(x > il[0] && x < il[1] && y > il[2] && y < il[3]){
-                return false;
-            }
+        if(tennisBallRowCol == dogRowCol)
+        {
+            GetComponent<Perception>().onSameCellAsTennisBall = true;
         }
-        return true;
     }
 }
 

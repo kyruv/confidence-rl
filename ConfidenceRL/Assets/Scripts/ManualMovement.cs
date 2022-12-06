@@ -15,19 +15,18 @@ public class ManualMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        List<float> perception = null;
-        if (Input.GetAxisRaw("Horizontal") > 0)
-        {
-            _rlConnection.QueueAction(Action.ROTATE_RIGHT);
-        }
-        else if(Input.GetAxisRaw("Horizontal") < 0)
-        {
-            _rlConnection.QueueAction(Action.ROTATE_LEFT);
-        } else if(Input.GetAxisRaw("Vertical") > 0)
+        if (Input.GetKeyDown("w"))
         {
             _rlConnection.QueueAction(Action.FORWARD);
         }
-        else if(Input.GetAxisRaw("Vertical") < 0)
+        else if(Input.GetKeyDown("a"))
+        {
+            _rlConnection.QueueAction(Action.ROTATE_LEFT);
+        } else if(Input.GetKeyDown("d"))
+        {
+            _rlConnection.QueueAction(Action.ROTATE_RIGHT);
+        }
+        else if(Input.GetKeyDown("s"))
         {
             _rlConnection.QueueAction(Action.RESET);
         }
