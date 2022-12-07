@@ -98,7 +98,7 @@ def is_confident_in_state(state, alpha_threshold):
     q_vals = q_value_history[state[0]][state[1]][state[2]][act]
 
     # fewer than 20 examples of this state - assume we aren't confident about it
-    if np.isnan().any():
+    if np.isnan(q_vals).any():
         return False
 
     sample_avgs = []
