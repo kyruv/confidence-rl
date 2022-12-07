@@ -3,15 +3,20 @@ import gym_envs
 import numpy as np
 import matplotlib.pyplot as plt
 import socket
+from datetime import datetime
 
 # row, column, rotation, action
-q_table = np.zeros([5,12,8,3])
+# if you need to define for the first time use this
+# q_table = np.zeros([5,12,8,3])
+q_table = np.load("models/qtable.npy")
 
-q_visit_count = np.zeros([5,12,8,3])
+# if you need to define for the first time use this
+# q_visit_count = np.zeros([5,12,8,3])
+q_visit_count = np.load("models/qvisitcount.npy")
 
 # hyperparams
 alpha = .01
-num_episodes = 15000
+num_episodes = 10000
 gamma = .9
 
 # make it deterministic
@@ -84,16 +89,18 @@ client, address = s.accept()
 env = gym.make('UnityEnv-v0', unity_sim_client=client)
 epsilon = 1
 for episode in range(1, num_episodes+1):
-    epsilon = np.power(1 - episode / num_episodes,5)
+    epsilon = np.power(1 - episode / num_episodes,2) * .75
     if episode == num_episodes:
         epsilon = 0
     observation, _ = env.reset()
     terminated = False
     agent_loc = get_agent_space(observation)
     print("Doing episode " + str(episode))
+    episode_return = 0
     while not terminated:
         action = get_greedy_action(agent_loc, epsilon)
         observation, reward, terminated, _, _ = env.step(action)
+        episode_return += reward
         q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] += 1
 
         new_agent_loc = get_agent_space(observation)
@@ -107,6 +114,13 @@ for episode in range(1, num_episodes+1):
     righty.append(q_table[cell_to_plot[0]][cell_to_plot[1]][cell_to_plot[2]][1])
     lefty.append(q_table[cell_to_plot[0]][cell_to_plot[1]][cell_to_plot[2]][2])
     epsilony.append(epsilon)
+
+    if episode % 10 == 0:
+        np.save("models/qtable", q_table)
+        np.save("models/qvisitcount", q_visit_count)
+
+        with open('models/tabular_training_progress.csv','a') as fd:
+            fd.write(','.join([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), str(episode), str(epsilon), str(episode_return)]) + '\n')
 
 
 print("Doing some stuff to figure out what epsilon decay, alpha, and episode count to use")
