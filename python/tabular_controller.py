@@ -97,6 +97,10 @@ def is_confident_in_state(state, alpha_threshold):
     act, q_compare = get_best_action_from(state)
     q_vals = q_value_history[state[0]][state[1]][state[2]][act]
 
+    # fewer than 20 examples of this state - assume we aren't confident about it
+    if np.isnan().any():
+        return False
+
     sample_avgs = []
 
     # this for-loop might work bc it's discrete, so the block-related stuff might not matter
