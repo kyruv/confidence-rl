@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import socket
 from datetime import datetime
+import time
 
 # row, column, rotation, action
 # if you need to define for the first time use this
@@ -73,14 +74,17 @@ def print_best_q_grid():
 def get_confidence_in_state(agent_loc):
     return sum(q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]])
 
-cell_to_plot = (1,11,0)
+cell_to_plot = (2,0,4)
 x = [0]
 righty = [0]
 forwardy = [0]
 lefty = [0]
 epsilony = [1]
 
-confidence_threshold = 200
+max_epsilon = .1
+experiment_mode = False
+time_per_robot_move = .5
+confidence_threshold = 240
 host = 'localhost' 
 port = 50000
 backlog = 5 
@@ -93,10 +97,12 @@ client, address = s.accept()
 env = gym.make('UnityEnv-v0', unity_sim_client=client)
 epsilon = 1
 for episode in range(1, num_episodes+1):
-    epsilon = np.power(1 - episode / num_episodes,2) * .75
+    epsilon = np.power(1 - episode / num_episodes,2) * max_epsilon
     if episode == num_episodes:
         epsilon = 0
-    epsilon = 0
+    if experiment_mode:
+        epsilon = .005
+    
     observation, _ = env.reset()
     terminated = False
     agent_loc = get_agent_space(observation)
@@ -105,7 +111,7 @@ for episode in range(1, num_episodes+1):
     while not terminated:
         
         action = None
-        if get_confidence_in_state(agent_loc) < confidence_threshold:
+        if experiment_mode and get_confidence_in_state(agent_loc) < confidence_threshold:
             client.send("h".encode())
             wait_control_ack = client.recv(size)
             action = -1
@@ -114,13 +120,21 @@ for episode in range(1, num_episodes+1):
         
         observation, reward, terminated, _, _ = env.step(action)
         episode_return += reward
-        q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] += 1
+        
 
         new_agent_loc = get_agent_space(observation)
         _, best_score = get_best_action_from(new_agent_loc)
-        old_q_value = q_table[agent_loc[0]][agent_loc[1]][agent_loc[2]][action]
-        q_table[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = old_q_value + alpha * (reward + gamma * best_score - old_q_value)
+
+        # only make updates when doing training
+        if not experiment_mode:
+            old_q_value = q_table[agent_loc[0]][agent_loc[1]][agent_loc[2]][action]
+            q_table[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = old_q_value + alpha * (reward + gamma * best_score - old_q_value)
+            q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] += 1
+        
         agent_loc = new_agent_loc
+
+        if experiment_mode and time_per_robot_move > 0:
+            time.sleep(time_per_robot_move)
     
     x.append(episode)
     forwardy.append(q_table[cell_to_plot[0]][cell_to_plot[1]][cell_to_plot[2]][0])
@@ -128,7 +142,7 @@ for episode in range(1, num_episodes+1):
     lefty.append(q_table[cell_to_plot[0]][cell_to_plot[1]][cell_to_plot[2]][2])
     epsilony.append(epsilon)
 
-    if episode % 10 == 0:
+    if not experiment_mode and episode % 10 == 0:
         np.save("models/qtable", q_table)
         np.save("models/qvisitcount", q_visit_count)
 
@@ -143,9 +157,3 @@ axis[0].plot(x, lefty, color = 'red')
 axis[0].plot(x, forwardy, color = 'green')
 axis[1].plot(x, epsilony, color = 'purple')
 plt.show()
-
-print("The answer for 3(i)a:")
-print_policy()
-print("")
-print("The answer for 3(i)b:")
-print_best_q_grid()

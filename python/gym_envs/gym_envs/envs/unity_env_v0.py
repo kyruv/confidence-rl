@@ -33,6 +33,9 @@ class UnityEnv_v0(gym.Env):
         if obs[0] == 1:
             return 100
         
+        if obs[0] == -1:
+            return -100
+        
         return -1
 
     # action -1 means wait for a human move
@@ -47,7 +50,7 @@ class UnityEnv_v0(gym.Env):
 
         terminated = False
         obs = self._getobs(data)
-        if obs[0] == 1:
+        if obs[0] != 0:
             terminated = True
         
         r = self.reward(obs)

@@ -8,8 +8,8 @@ public class ActionResolver : MonoBehaviour
 {
     public Vector2 dogRowCol;
     public Vector2 tennisBallRowCol;
+    public Vector2 trapRowCol;
 
-    private float _playerSpeed = 8.0f;
     private float _rotationSpeed = 45;
 
     private Vector3[,] grid = new Vector3[5, 12];
@@ -47,7 +47,9 @@ public class ActionResolver : MonoBehaviour
         directionMovement.Add(315, new Vector2(1, 1));
 
         tennisBallRowCol = new Vector2(2, 11);
+        trapRowCol = new Vector2(2, 6);
         GameObject.Find("TennisBall").transform.position = grid[2, 11];
+        GameObject.Find("Trap").transform.position = grid[2, 6];
 
         DoAction(Action.RESET);
     }
@@ -76,11 +78,14 @@ public class ActionResolver : MonoBehaviour
 
                 break;
             case Action.RESET:
-                GetComponent<Perception>().onSameCellAsTennisBall = false;
+                Perception p = GetComponent<Perception>();
+                p.onSameCellAsTennisBall = false;
+                p.onSameCellAsTrap = false;
 
                 int r = Random.Range(0, 5);
                 int c = Random.Range(0, 12);
-                while(!validLocations[r, c] || (r==tennisBallRowCol.x && c==tennisBallRowCol.y)){
+                while(!validLocations[r, c] || (r==tennisBallRowCol.x && c==tennisBallRowCol.y) || (r == trapRowCol.x && c == trapRowCol.y))
+                {
                     r = Random.Range(0, 5);
                     c = Random.Range(0, 12);
                 }
@@ -99,8 +104,16 @@ public class ActionResolver : MonoBehaviour
 
         if(tennisBallRowCol == dogRowCol)
         {
-            GetComponent<Perception>().onSameCellAsTennisBall = true;
+            Perception p = GetComponent<Perception>();
+            p.onSameCellAsTennisBall = true;
+            
         }
+        if (dogRowCol == trapRowCol)
+        {
+            Perception p = GetComponent<Perception>();
+            p.onSameCellAsTrap = true;
+        }
+
     }
 }
 

@@ -10,6 +10,7 @@ public class Perception : MonoBehaviour
     private ActionResolver actionResolver;
 
     public bool onSameCellAsTennisBall = false;
+    public bool onSameCellAsTrap = false;
 
     // Start is called before the first frame update
     void Start()
@@ -31,7 +32,10 @@ public class Perception : MonoBehaviour
         if (onSameCellAsTennisBall)
         {
             perceptions.Add(1);
-        } else
+        } else if (onSameCellAsTrap)
+        {
+            perceptions.Add(-1);
+        }
         {
             perceptions.Add(0);
         }

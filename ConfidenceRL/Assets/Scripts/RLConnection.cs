@@ -13,6 +13,8 @@ public class RLConnection : MonoBehaviour
     public float withinAngle = 15;
     public float closeEnoughDistance = .5f;
 
+    public bool humanControlledAlways = false;
+
     private NavMeshPath _navMeshPath;
     private Transform _target;
     
@@ -38,8 +40,11 @@ public class RLConnection : MonoBehaviour
     public void SubmitHumanMove(Action a)
     {
         _mainThreadActions.Enqueue(a);
-        _manualMovement.enabled = false;
-        _humanControlledText.SetActive(false);
+        if (!humanControlledAlways)
+        {
+            _manualMovement.enabled = false;
+            _humanControlledText.SetActive(false);
+        }
     }
 
     private void Update()
