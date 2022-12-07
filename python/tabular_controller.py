@@ -27,12 +27,16 @@ history_length = 20
 num_samples = 15
 block_length = 3
 conf_m = history_length // block_length
-history_count = 0
 
 # if you need to define for the first time use this
-# q_value_history = np.zeros([history_length,5,12,8,3])
+# q_value_history = np.zeros([5,12,8,3,history_length])
+# q_value_history.fill(np.nan)
+# for r in range(5):
+#     for c in range(12):
+#         for rot in range(8):
+#             for a in range(3):
+#                 q_value_history[0] = 0
 q_value_history = np.load("models/qvaluehistory.npy")
-
 
 # make it deterministic
 np.random.seed(1)
@@ -91,7 +95,7 @@ def get_confidence_in_state(agent_loc):
 def is_confident_in_state(state, alpha_threshold):
     # alpha threshold is confidence level, as in (1.0 - alpha)% confident
     act, q_compare = get_best_action_from(state)
-    q_vals = q_value_history[:, state[0], state[1], state[2], act]
+    q_vals = q_value_history[state[0]][state[1]][state[2]][act]
 
     sample_avgs = []
 
@@ -126,14 +130,14 @@ def is_confident_in_state(state, alpha_threshold):
 
 
 # --------- RUN DETAIL CONFIG -----------
-experiment_mode = False
+experiment_mode = True
 
 # if in experiment mode
 use_simple_confidence = False
 time_per_robot_move = .5
 
 simple_confidence_threshold = 240
-statistical_conf_alpha = 0.1
+statistical_conf_alpha = 1
 
 # if in training mode
 max_epsilon = .75
@@ -180,10 +184,12 @@ for episode in range(1, num_episodes+1):
             else:
                 is_confident = is_confident_in_state(agent_loc, statistical_conf_alpha)
 
-            if not is_confident:
+            if is_confident:
+                action = get_greedy_action(agent_loc, epsilon)
+            else:
                 client.send("h".encode())
                 wait_control_ack = client.recv(size)
-                action = -1
+                action = -1                
         else:
             action = get_greedy_action(agent_loc, epsilon)
         
@@ -197,18 +203,27 @@ for episode in range(1, num_episodes+1):
         if not experiment_mode:
             # standard q learning update
             old_q_value = q_table[agent_loc[0]][agent_loc[1]][agent_loc[2]][action]
-            q_table[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = old_q_value + alpha * (reward + gamma * best_score - old_q_value)
+            updated_q_value = old_q_value + alpha * (reward + gamma * best_score - old_q_value)
+            q_table[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = updated_q_value
             
             # simple confidence tracking
             q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] += 1
 
             # statistical confidence tracking
-            if history_count < history_length:
-                q_value_history[history_count] = q_table
-                history_count += 1
-            elif history_count == history_length:
-                np.roll(q_value_history, -1, axis=0) # move first (oldest) element to last
-                q_value_history[-1] = q_table        # overwrite oldest q_table with newest
+            need_to_overwrite = True
+
+            for i in range(len(q_value_history[agent_loc[0]][agent_loc[1]][agent_loc[2]][action])):
+                if np.isnan(q_value_history[agent_loc[0]][agent_loc[1]][agent_loc[2]][action][i]):
+                    q_value_history[agent_loc[0]][agent_loc[1]][agent_loc[2]][action][i] = updated_q_value
+                    need_to_overwrite = False
+                    break
+            
+            # remove oldest history of the cell and place new value
+            if need_to_overwrite:
+                # move first (oldest) element to last
+                q_value_history[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = np.roll(q_value_history[agent_loc[0]][agent_loc[1]][agent_loc[2]][action], -1, axis=0)
+                # overwrite oldest q_table with newest
+                q_value_history[agent_loc[0]][agent_loc[1]][agent_loc[2]][action][-1] = updated_q_value
         
         agent_loc = new_agent_loc
 
