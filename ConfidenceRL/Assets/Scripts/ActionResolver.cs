@@ -80,7 +80,7 @@ public class ActionResolver : MonoBehaviour
 
                 int r = Random.Range(0, 5);
                 int c = Random.Range(0, 12);
-                while(!validLocations[r, c]){
+                while(!validLocations[r, c] || (r==tennisBallRowCol.x && c==tennisBallRowCol.y)){
                     r = Random.Range(0, 5);
                     c = Random.Range(0, 12);
                 }
@@ -110,5 +110,5 @@ public enum Action
     ROTATE_LEFT = 1,
     FORWARD = 2,
     RESET = 3,
-    CONTROL_TOGGLE = 4,
+    HUMAN_MOVE_REQUESTED = 4,
 };

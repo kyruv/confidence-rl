@@ -35,9 +35,11 @@ public class RLConnection : MonoBehaviour
         SetupServer();
     }
 
-    public void QueueAction(Action a)
+    public void SubmitHumanMove(Action a)
     {
         _mainThreadActions.Enqueue(a);
+        _manualMovement.enabled = false;
+        _humanControlledText.SetActive(false);
     }
 
     private void Update()
@@ -46,10 +48,10 @@ public class RLConnection : MonoBehaviour
         while (_mainThreadActions.Count > 0 && _mainThreadActions.TryDequeue(out Action action))
         {
             print("Doing action "+ action.ToString());
-            if(action == Action.CONTROL_TOGGLE)
+            if(action == Action.HUMAN_MOVE_REQUESTED)
             {
-                _manualMovement.enabled = !_manualMovement.enabled;
-                _humanControlledText.SetActive(_manualMovement.enabled);
+                _manualMovement.enabled = true;
+                _humanControlledText.SetActive(true);
                 SendData(System.Text.Encoding.Default.GetBytes("ack control handoff"));
                 continue;
             }
@@ -169,7 +171,7 @@ public class RLConnection : MonoBehaviour
                 _mainThreadActions.Enqueue(Action.RESET);
                 break;
             case 'h':
-                _mainThreadActions.Enqueue(Action.CONTROL_TOGGLE);
+                _mainThreadActions.Enqueue(Action.HUMAN_MOVE_REQUESTED);
                 break;
             default:
                 Debug.Log("Nothing received " + command);

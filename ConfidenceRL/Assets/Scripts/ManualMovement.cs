@@ -17,18 +17,18 @@ public class ManualMovement : MonoBehaviour
     {
         if (Input.GetKeyDown("w"))
         {
-            _rlConnection.QueueAction(Action.FORWARD);
+            _rlConnection.SubmitHumanMove(Action.FORWARD);
         }
         else if(Input.GetKeyDown("a"))
         {
-            _rlConnection.QueueAction(Action.ROTATE_LEFT);
+            _rlConnection.SubmitHumanMove(Action.ROTATE_LEFT);
         } else if(Input.GetKeyDown("d"))
         {
-            _rlConnection.QueueAction(Action.ROTATE_RIGHT);
+            _rlConnection.SubmitHumanMove(Action.ROTATE_RIGHT);
         }
-        else if(Input.GetKeyDown("s"))
+        else if(Input.GetKeyDown("r"))
         {
-            _rlConnection.QueueAction(Action.RESET);
+            _rlConnection.SubmitHumanMove(Action.RESET);
         }
     }
 }

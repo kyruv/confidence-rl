@@ -70,6 +70,9 @@ def print_best_q_grid():
                  
     print(best_q_grid)
 
+def get_confidence_in_state(agent_loc):
+    return sum(q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]])
+
 cell_to_plot = (1,11,0)
 x = [0]
 righty = [0]
@@ -77,6 +80,7 @@ forwardy = [0]
 lefty = [0]
 epsilony = [1]
 
+confidence_threshold = 200
 host = 'localhost' 
 port = 50000
 backlog = 5 
@@ -92,13 +96,22 @@ for episode in range(1, num_episodes+1):
     epsilon = np.power(1 - episode / num_episodes,2) * .75
     if episode == num_episodes:
         epsilon = 0
+    epsilon = 0
     observation, _ = env.reset()
     terminated = False
     agent_loc = get_agent_space(observation)
     print("Doing episode " + str(episode))
     episode_return = 0
     while not terminated:
-        action = get_greedy_action(agent_loc, epsilon)
+        
+        action = None
+        if get_confidence_in_state(agent_loc) < confidence_threshold:
+            client.send("h".encode())
+            wait_control_ack = client.recv(size)
+            action = -1
+        else:
+            action = get_greedy_action(agent_loc, epsilon)
+        
         observation, reward, terminated, _, _ = env.step(action)
         episode_return += reward
         q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] += 1

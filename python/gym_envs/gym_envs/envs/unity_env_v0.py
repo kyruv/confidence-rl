@@ -13,8 +13,6 @@ class UnityEnv_v0(gym.Env):
         self.window = None
         self.clock = None
 
-        self.is_human_controlling = False
-
         self._action_map = {
             0: "f".encode(),
             1: "r".encode(),
@@ -30,16 +28,18 @@ class UnityEnv_v0(gym.Env):
     def _getobs(self, data):
         return np.array(data.decode().split(',')).astype(np.float32)
 
+
     def reward(self, obs):
         if obs[0] == 1:
             return 100
         
         return -1
 
+    # action -1 means wait for a human move
     def step(self, action):
         data = None
 
-        if self.is_human_controlling:
+        if action == -1:
             data = self.unity_sim_client.recv(self.size)
         else:
             self.unity_sim_client.send(self._action_map[action])
