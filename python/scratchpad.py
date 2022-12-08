@@ -85,6 +85,31 @@ def convert_M2_array(m2):
 
 # print(np.nanmax(all_stds))
 
+def get_best_action_from(q_table, r, c, rot):
+    best_action = None
+    best_score = None
+    for action in range(3):
+        action_score = q_table[r][c][rot][action]
+        if best_score == None or action_score > best_score:
+            best_score = action_score
+            best_action = action
+    return best_action, best_score
+
+def get_policy(rotation):
+    q_table = np.load("models/qtable.npy")
+    policy = np.zeros([5,12], dtype='object')
+
+    action_repr = ["F", "R", "L"]
+
+    for r in range(5):
+        for c in range(12):
+            if count_actions_collapsed[r][c][0] == maxv + 1:
+                policy[r][c] = ""
+            else:
+                best_action, _ = get_best_action_from(q_table, r, c, rotation)
+                policy[r][c] = action_repr[best_action]
+    
+    return policy
 
 q_visit_count = np.load("models/qvisitcount.npy")
 print(q_visit_count.mean())
@@ -110,15 +135,13 @@ count_actions_collapsed[2,11,:] = maxv + 1
 
 count_rotations_collapsed = np.average(count_actions_collapsed, axis=2)
 
-print(count_actions_collapsed[1,1,:])
-
 fig, ax = plt.subplots( nrows=3, ncols=3, figsize=(16,8))
 cbar_ax = fig.add_axes([.91, .2, .03, .6])
 titles = [["Facing ↖", "Facing ↑", "Facing ↗"], ["Facing ←", "Averaged", "Facing →"], ["Facing ↙", "Facing ↓", "Facing ↘"]]
 rotation_keys = [[5,6,7], [4,-1,0], [3,2,1]]
 
-cmap = plt.cm.get_cmap('hot_r').copy()
-cmap.set_under('purple')
+cmap = plt.cm.get_cmap('YlOrRd').copy()
+cmap.set_under('white')
 cmap.set_over('grey')
 
 for r in range(3):
@@ -129,13 +152,19 @@ for r in range(3):
         else:
             data = count_actions_collapsed[:,:,rotation_keys[r][c]]
 
+        policy_labels = [[""] * 12 for _ in range(5)]
+        if not (r == 1 and c == 1):
+            policy_labels = get_policy(rotation_keys[r][c])
+
         hm = sns.heatmap(data, 
                 ax=ax[r][c],
-                annot = True,
-                vmin=190, 
-                fmt=".1f",
-                annot_kws={"fontsize":5},
-                # norm=LogNorm(),
+                annot = policy_labels,
+                vmin=np.percentile(count_actions_collapsed, 15), 
+                fmt = '',
+                linewidths=.5, 
+                linecolor='black',
+                annot_kws={"fontsize":7},
+                norm=LogNorm(vmin=np.percentile(count_actions_collapsed, 15), vmax=maxv),
                 vmax=maxv,
                 square=True,
                 cmap = cmap,

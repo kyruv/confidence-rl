@@ -10,12 +10,15 @@ import math
 
 # row, column, rotation, action
 # if you need to define for the first time use this
-# q_table = np.zeros([5,12,8,3])
-q_table = np.load("models/qtable.npy")
+q_table = np.zeros([5,12,8,3])
+# q_table = np.load("models/qtable.npy")
 
 # if you need to define for the first time use this
-# q_visit_count = np.zeros([5,12,8,3])
-q_visit_count = np.load("models/qvisitcount.npy")
+q_visit_count = np.zeros([5,12,8,3])
+# q_visit_count = np.load("models/qvisitcount.npy")
+
+q_epsilon_weighted_visit_count = np.zeros([5,12,8,3])
+# q_epsilon_weighted_visit_count = np.load("models/qepcount.npy")
 
 # hyperparams
 alpha = .01
@@ -29,18 +32,18 @@ block_length = 3
 conf_m = history_length // block_length
 
 # if you need to define for the first time use this
-# q_value_history = np.zeros([5,12,8,3,history_length])
-# q_value_history.fill(np.nan)
-# for r in range(5):
-#     for c in range(12):
-#         for rot in range(8):
-#             for a in range(3):
-#                 q_value_history[0] = 0
-q_value_history = np.load("models/qvaluehistory_12.6.npy")
+q_value_history = np.zeros([5,12,8,3,history_length])
+q_value_history.fill(np.nan)
+for r in range(5):
+    for c in range(12):
+        for rot in range(8):
+            for a in range(3):
+                q_value_history[0] = 0
+# q_value_history = np.load("models/qvaluehistory_12.6.npy")
 
 # each action has (count, mean, M2) M2 is used to calculate variance
-# q_distribution = np.zeros([5,12,8,3,3])
-q_distribution = np.load("models/qdistribution.npy")
+q_distribution = np.zeros([5,12,8,3,3])
+# q_distribution = np.load("models/qdistribution.npy")
 
 # make it deterministic
 np.random.seed(1)
@@ -167,7 +170,7 @@ def convert_M2_array(m2):
 
 
 # --------- RUN DETAIL CONFIG -----------
-experiment_mode = True
+experiment_mode = False
 
 # if in experiment mode
 use_simple_confidence = True
@@ -177,7 +180,7 @@ simple_confidence_threshold = 190
 statistical_conf_alpha = .99
 
 # if in training mode
-max_epsilon = .05
+max_epsilon = .75
 # --------- END RUN DETAILS ----------
 
 cell_to_plot = (2,0,4)
@@ -201,8 +204,6 @@ env = gym.make('UnityEnv-v0', unity_sim_client=client)
 epsilon = 1
 for episode in range(1, num_episodes+1):
     epsilon = np.power(1 - episode / num_episodes,2) * max_epsilon
-    if episode == num_episodes:
-        epsilon = 0
     if experiment_mode:
         epsilon = .005
     
@@ -251,6 +252,8 @@ for episode in range(1, num_episodes+1):
             if not did_update_count_already[agent_loc[0]][agent_loc[1]][agent_loc[2]][action]:
                 q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] += 1
                 did_update_count_already[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = True
+            
+                q_epsilon_weighted_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] += np.min([.01/epsilon, 5000])
 
             # distribution based confidence
             q_distribution[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = get_distribution_update(q_distribution[agent_loc[0]][agent_loc[1]][agent_loc[2]][action], updated_q_value)
@@ -290,6 +293,7 @@ for episode in range(1, num_episodes+1):
         np.save("models/qvaluehistory_12.6", q_value_history)
         np.save("models/qdistribution", q_distribution)
         np.save("models/qdisttrainingtimeline", np.array(q_dist_training_timeline))
+        np.save("models/qepcount.npy", q_epsilon_weighted_visit_count)
 
         with open('models/tabular_training_wqdist_progress.csv','a') as fd:
             fd.write(','.join([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), str(episode), str(epsilon), str(episode_return)]) + '\n')
