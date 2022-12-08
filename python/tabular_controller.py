@@ -96,6 +96,24 @@ def print_best_q_grid():
                  
     print(best_q_grid)
 
+def get_clear_action_score(state):
+    r = state[0]
+    c = state[1]
+    rot = state[2]
+    scores = np.sort(q_table[r][c][rot])
+    return scores[-1] - scores[-2]
+
+def calc_threshold_from_percentage(percentage):
+    assert(percentage > 0 and percentage <= 100)
+
+    next_best_action_data = np.zeros(shape=(5,12,8))
+    for r in range(5):
+        for c in range(12):
+            for rot in range(8):
+                next_best_action_data[r][c][rot] = get_clear_action_score((r, c, rot))
+
+    return np.percentile(next_best_action_data.flatten(), percentage)
+
 def get_confidence_in_state(agent_loc):
     return sum(q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]])
 
@@ -145,7 +163,6 @@ def is_confident_in_state(state, alpha_threshold):
     print(f"T={T_a}, UCB={upper_conf_bnd}, Q for act={q_compare}")
     return np.average(q_vals) < upper_conf_bnd
 
-
 def get_distribution_update(existing_val, new_val):
     count = existing_val[0]
     mean = existing_val[1]
@@ -173,11 +190,17 @@ def convert_M2_array(m2):
 experiment_mode = True
 
 # if in experiment mode
-use_simple_confidence = True
+use_simple_confidence = False   # only make one of these true
+use_next_best_conf = True
+use_stats_conf = False
+assert(use_simple_confidence ^ use_next_best_conf ^ use_stats_conf)
+
 time_per_robot_move = .5
 
 simple_confidence_threshold = 190
 statistical_conf_alpha = .99
+next_best_conf_percentage = 30 
+next_best_conf_threshold = calc_threshold_from_percentage(next_best_conf_percentage)
 
 # if in training mode
 max_epsilon = .1
@@ -223,8 +246,12 @@ for episode in range(1, num_episodes+1):
             is_confident = False
             if use_simple_confidence:
                 is_confident = get_confidence_in_state(agent_loc) > simple_confidence_threshold
-            else:
+            elif  use_stats_conf:
                 is_confident = is_confident_in_state(agent_loc, statistical_conf_alpha)
+            elif use_next_best_conf:
+                is_confident = get_clear_action_score(agent_loc) > next_best_conf_threshold
+            else:
+                assert(False) # incorrect params
 
             if is_confident:
                 action = get_greedy_action(agent_loc, epsilon)
