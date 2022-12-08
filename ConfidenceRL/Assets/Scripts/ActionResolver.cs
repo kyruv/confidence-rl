@@ -20,6 +20,7 @@ public class ActionResolver : MonoBehaviour
 
     void Start()
     {
+        Random.seed = 42;
         locked_y_position = transform.position.y;
 
         for (int r =0; r<5; r++)
@@ -89,8 +90,8 @@ public class ActionResolver : MonoBehaviour
                     r = Random.Range(0, 5);
                     c = Random.Range(0, 12);
                 }
-                
                 int rotation = Random.Range(0, 8) * 45;
+                
                 transform.position = grid[r, c];
                 transform.eulerAngles = new Vector3(0, rotation, 90);
 

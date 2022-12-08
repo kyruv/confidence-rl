@@ -115,35 +115,16 @@ def is_confident_in_state(state, alpha_threshold):
         sample = np.random.choice(q_vals, conf_m) # samples with replacement
         sample_avgs.append(sample.sum() / len(sample))
 
-    # this is how the algorithm is specified for continous spaces
-    # for n in range(num_samples):
-    #     # randomly sample "M" blocks
-    #     sampled_blocks = []
-    #     for m in range(conf_m):
-    #         start = random.randrange(0, history_length - block_length)
-    #         for b in range(block_length):
-    #             sampled_blocks.append(q_vals[start + b])
-
-    #     sample_avg = sum(sampled_blocks) / len(sampled_blocks)
-
-    #     sample_avgs.append(sample_avg)
-
     sample_avgs.sort()
-    print(sample_avgs)
 
     temp = (num_samples * alpha_threshold / 2) + ((alpha_threshold + 2) / 6)
     j = math.floor(temp)
     r = temp - j
 
-    print(r)
-    print(j)
-    print(sample_avgs[j])
-    print(np.average(q_vals))
-
     T_a = (1 - r) * sample_avgs[j] + r * sample_avgs[j+1]
     upper_conf_bnd = 2 * (q_vals.sum() / len(q_vals)) - T_a
     print(f"T={T_a}, UCB={upper_conf_bnd}, Q for act={q_compare}")
-    return np.average(q_vals) < upper_conf_bnd
+    return q_compare < upper_conf_bnd
 
 
 def get_distribution_update(existing_val, new_val):
@@ -205,7 +186,7 @@ epsilon = 1
 for episode in range(1, num_episodes+1):
     epsilon = np.power(1 - episode / num_episodes,2) * max_epsilon
     if experiment_mode:
-        epsilon = .005
+        epsilon = 0
     
     observation, _ = env.reset()
     terminated = False
