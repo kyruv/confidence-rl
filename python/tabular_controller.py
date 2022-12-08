@@ -36,7 +36,11 @@ conf_m = history_length // block_length
 #         for rot in range(8):
 #             for a in range(3):
 #                 q_value_history[0] = 0
-q_value_history = np.load("models/qvaluehistory.npy")
+q_value_history = np.load("models/qvaluehistory_12.6.npy")
+
+# each action has (count, mean, M2) M2 is used to calculate variance
+# q_distribution = np.zeros([5,12,8,3,3])
+q_distribution = np.load("models/qdistribution.npy")
 
 # make it deterministic
 np.random.seed(1)
@@ -104,47 +108,76 @@ def is_confident_in_state(state, alpha_threshold):
     sample_avgs = []
 
     # this for-loop might work bc it's discrete, so the block-related stuff might not matter
-    # for n in range(num_samples):
-    #     sample = random.choice(q_vals, conf_m) # samples with replacement
-    #     sample_avgs.append(sample.sum() / len(sample))
+    for n in range(num_samples):
+        sample = np.random.choice(q_vals, conf_m) # samples with replacement
+        sample_avgs.append(sample.sum() / len(sample))
 
     # this is how the algorithm is specified for continous spaces
-    for n in range(num_samples):
-        # randomly sample "M" blocks
-        sampled_blocks = []
-        for m in range(conf_m):
-            start = random.randrange(0, history_length - block_length)
-            for b in range(block_length):
-                sampled_blocks.append(q_vals[start + b])
+    # for n in range(num_samples):
+    #     # randomly sample "M" blocks
+    #     sampled_blocks = []
+    #     for m in range(conf_m):
+    #         start = random.randrange(0, history_length - block_length)
+    #         for b in range(block_length):
+    #             sampled_blocks.append(q_vals[start + b])
 
-        sample_avg = sum(sampled_blocks) / len(sampled_blocks)
+    #     sample_avg = sum(sampled_blocks) / len(sampled_blocks)
 
-        sample_avgs.append(sample_avg)
+    #     sample_avgs.append(sample_avg)
 
     sample_avgs.sort()
+    print(sample_avgs)
 
     temp = (num_samples * alpha_threshold / 2) + ((alpha_threshold + 2) / 6)
     j = math.floor(temp)
     r = temp - j
 
+    print(r)
+    print(j)
+    print(sample_avgs[j])
+    print(np.average(q_vals))
+
     T_a = (1 - r) * sample_avgs[j] + r * sample_avgs[j+1]
     upper_conf_bnd = 2 * (q_vals.sum() / len(q_vals)) - T_a
     print(f"T={T_a}, UCB={upper_conf_bnd}, Q for act={q_compare}")
-    return q_compare < upper_conf_bnd
+    return np.average(q_vals) < upper_conf_bnd
+
+
+def get_distribution_update(existing_val, new_val):
+    count = existing_val[0]
+    mean = existing_val[1]
+    M2 = existing_val[2]
+    count += 1
+    delta = new_val - mean
+    mean += delta / count
+    delta2 = new_val - mean
+    M2 += delta * delta2
+    return np.array([count, mean, M2])
+
+def convert_M2_array(m2):
+    count = m2[0]
+    mean = m2[1]
+    M2 = m2[2]
+
+    if count < 2:
+        return None
+    else:
+        (mean, variance, sampleVariance) = (mean, M2 / count, M2 / (count - 1))
+        return (mean, variance, sampleVariance)
 
 
 # --------- RUN DETAIL CONFIG -----------
 experiment_mode = True
 
 # if in experiment mode
-use_simple_confidence = False
+use_simple_confidence = True
 time_per_robot_move = .5
 
-simple_confidence_threshold = 240
-statistical_conf_alpha = 1
+simple_confidence_threshold = 190
+statistical_conf_alpha = .99
 
 # if in training mode
-max_epsilon = .75
+max_epsilon = .05
 # --------- END RUN DETAILS ----------
 
 cell_to_plot = (2,0,4)
@@ -161,6 +194,8 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((host,port)) 
 s.listen(backlog)
 
+q_dist_training_timeline = []
+
 client, address = s.accept() 
 env = gym.make('UnityEnv-v0', unity_sim_client=client)
 epsilon = 1
@@ -176,6 +211,8 @@ for episode in range(1, num_episodes+1):
     agent_loc = get_agent_space(observation)
     print("Doing episode " + str(episode))
     episode_return = 0
+    did_update_count_already = np.zeros([5,12,8,3], dtype=bool)
+
     while not terminated:
         
         action = None
@@ -211,8 +248,15 @@ for episode in range(1, num_episodes+1):
             q_table[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = updated_q_value
             
             # simple confidence tracking
-            q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] += 1
+            if not did_update_count_already[agent_loc[0]][agent_loc[1]][agent_loc[2]][action]:
+                q_visit_count[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] += 1
+                did_update_count_already[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = True
 
+            # distribution based confidence
+            q_distribution[agent_loc[0]][agent_loc[1]][agent_loc[2]][action] = get_distribution_update(q_distribution[agent_loc[0]][agent_loc[1]][agent_loc[2]][action], updated_q_value)
+            if (agent_loc[0], agent_loc[1], agent_loc[2]) == cell_to_plot:
+                if action == 0:
+                    q_dist_training_timeline.append(q_distribution[agent_loc[0]][agent_loc[1]][agent_loc[2]][action])
             # statistical confidence tracking
             need_to_overwrite = True
 
@@ -243,9 +287,11 @@ for episode in range(1, num_episodes+1):
     if not experiment_mode and episode % 10 == 0:
         np.save("models/qtable", q_table)
         np.save("models/qvisitcount", q_visit_count)
-        np.save("models/qvaluehistory", q_value_history)
+        np.save("models/qvaluehistory_12.6", q_value_history)
+        np.save("models/qdistribution", q_distribution)
+        np.save("models/qdisttrainingtimeline", np.array(q_dist_training_timeline))
 
-        with open('models/tabular_training_progress.csv','a') as fd:
+        with open('models/tabular_training_wqdist_progress.csv','a') as fd:
             fd.write(','.join([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), str(episode), str(epsilon), str(episode_return)]) + '\n')
 
 
