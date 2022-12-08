@@ -10,19 +10,19 @@ import math
 
 # row, column, rotation, action
 # if you need to define for the first time use this
-q_table = np.zeros([5,12,8,3])
-# q_table = np.load("models/qtable.npy")
+# q_table = np.zeros([5,12,8,3])
+q_table = np.load("models/qtable.npy")
 
 # if you need to define for the first time use this
-q_visit_count = np.zeros([5,12,8,3])
-# q_visit_count = np.load("models/qvisitcount.npy")
+# q_visit_count = np.zeros([5,12,8,3])
+q_visit_count = np.load("models/qvisitcount.npy")
 
-q_epsilon_weighted_visit_count = np.zeros([5,12,8,3])
-# q_epsilon_weighted_visit_count = np.load("models/qepcount.npy")
+# q_epsilon_weighted_visit_count = np.zeros([5,12,8,3])
+q_epsilon_weighted_visit_count = np.load("models/qepcount.npy")
 
 # hyperparams
 alpha = .01
-num_episodes = 10000
+num_episodes = 5000
 gamma = .9
 
 # stats-based confidence params
@@ -33,17 +33,17 @@ conf_m = history_length // block_length
 
 # if you need to define for the first time use this
 q_value_history = np.zeros([5,12,8,3,history_length])
-q_value_history.fill(np.nan)
-for r in range(5):
-    for c in range(12):
-        for rot in range(8):
-            for a in range(3):
-                q_value_history[0] = 0
-# q_value_history = np.load("models/qvaluehistory_12.6.npy")
+# q_value_history.fill(np.nan)
+# for r in range(5):
+#     for c in range(12):
+#         for rot in range(8):
+#             for a in range(3):
+#                 q_value_history[0] = 0
+q_value_history = np.load("models/qvaluehistory_12.6.npy")
 
 # each action has (count, mean, M2) M2 is used to calculate variance
-q_distribution = np.zeros([5,12,8,3,3])
-# q_distribution = np.load("models/qdistribution.npy")
+# q_distribution = np.zeros([5,12,8,3,3])
+q_distribution = np.load("models/qdistribution.npy")
 
 # make it deterministic
 np.random.seed(1)
@@ -170,7 +170,7 @@ def convert_M2_array(m2):
 
 
 # --------- RUN DETAIL CONFIG -----------
-experiment_mode = False
+experiment_mode = True
 
 # if in experiment mode
 use_simple_confidence = True
@@ -180,7 +180,7 @@ simple_confidence_threshold = 190
 statistical_conf_alpha = .99
 
 # if in training mode
-max_epsilon = .75
+max_epsilon = .1
 # --------- END RUN DETAILS ----------
 
 cell_to_plot = (2,0,4)

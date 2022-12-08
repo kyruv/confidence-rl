@@ -85,6 +85,13 @@ def convert_M2_array(m2):
 
 # print(np.nanmax(all_stds))
 
+def get_clear_action_score(q_table, r, c, rot):
+    best_action = None
+    best_score = None
+    scores = np.sort(q_table[r][c][rot])
+    
+    return scores[-1] - scores[-2]
+
 def get_best_action_from(q_table, r, c, rot):
     best_action = None
     best_score = None
@@ -111,13 +118,26 @@ def get_policy(rotation):
     
     return policy
 
-q_visit_count = np.load("models/qvisitcount.npy")
-print(q_visit_count.mean())
-# print(q_visit_count[0,2,4,:])
 
-# q_history = np.load("models/qvaluehistory.npy")
 
-count_actions_collapsed = np.sum(q_visit_count, axis=3)
+
+
+# q_visit_count = np.load("models/qepcount.npy")
+# print(q_visit_count.mean())
+# # print(q_visit_count[0,2,4,:])
+
+# # q_history = np.load("models/qvaluehistory.npy")
+
+q_table = np.load("models/qtable.npy")
+
+data = np.zeros(shape=(5,12,8))
+
+for r in range(5):
+    for c in range(12):
+        for rot in range(8):
+            data[r][c][rot] = get_clear_action_score(q_table, r, c, rot)
+
+count_actions_collapsed = data
 print(count_actions_collapsed.shape)
 
 maxv = np.max(count_actions_collapsed)
@@ -164,7 +184,7 @@ for r in range(3):
                 linewidths=.5, 
                 linecolor='black',
                 annot_kws={"fontsize":7},
-                norm=LogNorm(vmin=np.percentile(count_actions_collapsed, 15), vmax=maxv),
+                # norm=LogNorm(vmin=np.percentile(count_actions_collapsed, 15), vmax=maxv),
                 vmax=maxv,
                 square=True,
                 cmap = cmap,
