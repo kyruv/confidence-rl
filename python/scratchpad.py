@@ -96,18 +96,18 @@ def get_policy(rotation):
  
 data = np.zeros(shape=(5,12,8))
  
-q_table = np.load("models/qtable.npy")
-qhist = np.load("models/qvaluehistory_12.6.npy")
-for r in range(5):
-    for c in range(12):
-        for rot in range(8):
-            data[r][c][rot] = get_confidence_score_stats(qhist, q_table, (r, c, rot), .8)
- 
-# qdistribution = np.load("models/qdistribution.npy")
+# q_table = np.load("models/qtable.npy")
+# qhist = np.load("models/qvaluehistory_12.6.npy")
 # for r in range(5):
 #     for c in range(12):
 #         for rot in range(8):
-#             data[r][c][rot] = get_clear_action_score_dist(qdistribution, r, c, rot)
+#             data[r][c][rot] = get_confidence_score_stats(qhist, q_table, (r, c, rot), .8)
+ 
+qdistribution = np.load("models/qdistribution.npy")
+for r in range(5):
+    for c in range(12):
+        for rot in range(8):
+            data[r][c][rot] = get_clear_action_score_dist(qdistribution, r, c, rot)
  
 # data = np.load("models/qepcount.npy")
 # print(data.mean())

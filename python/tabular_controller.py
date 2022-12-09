@@ -214,8 +214,7 @@ for episode in range(1, num_episodes+1):
     episode_return = 0
     did_update_count_already = np.zeros([5,12,8,3], dtype=bool)
 
-    while not terminated:
-        
+    while not terminated:        
         action = None
 
         # determine if human should take over

@@ -20,6 +20,7 @@ public class ActionResolver : MonoBehaviour
 
     void Start()
     {
+        Random.seed=42;
         locked_y_position = transform.position.y;
 
         for (int r =0; r<5; r++)

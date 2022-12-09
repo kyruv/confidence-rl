@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
 using System;
 using System.Net.Sockets;
 using System.Net;
@@ -26,6 +27,11 @@ public class RLConnection : MonoBehaviour
     private Socket _clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
     private byte[] _recieveBuffer = new byte[8142];
 
+    private AudioSource _audioData;
+    private float _moveDelay = .5f;
+    private List<float> _lastHumanPerception;
+    private bool _totalHumanControl = false;
+
     void Start()
     {
         _step = GetComponent<StepResolver>();
@@ -34,6 +40,8 @@ public class RLConnection : MonoBehaviour
         _humanControlledText.SetActive(false);
         _target = GameObject.Find("TennisBall").transform;
         _navMeshPath = new NavMeshPath();
+        _audioData = GetComponent<AudioSource>();
+        _lastHumanPerception = new List<float>();
         SetupServer();
     }
 
@@ -42,24 +50,69 @@ public class RLConnection : MonoBehaviour
         _mainThreadActions.Enqueue(a);
         if (!humanControlledAlways)
         {
-            _manualMovement.enabled = false;
-            _humanControlledText.SetActive(false);
+            if(!_totalHumanControl){
+                _manualMovement.enabled = false;
+                _humanControlledText.SetActive(false);
+            }
         }
     }
 
     private void Update()
     {
+        if (Input.GetKeyDown("space"))
+        {
+            if(_totalHumanControl){
+                _totalHumanControl = false;
+                _manualMovement.SetMoveDelay(0);
+                _manualMovement.enabled = false;
+                _humanControlledText.GetComponent<Text>().text = "Human Control Requested";
+                _humanControlledText.SetActive(false);
+                print("Human Control Ended, Sending " + string.Join(",", _lastHumanPerception));
+                SendData(System.Text.Encoding.Default.GetBytes(string.Join(",", _lastHumanPerception)));
+                _lastHumanPerception = new List<float>();
+            } else{
+                _totalHumanControl = true;
+                _manualMovement.enabled = true;
+                _manualMovement.SetMoveDelay(.5f);
+                print("Human Control Started Manually");
+                _humanControlledText.GetComponent<Text>().text = "Manual Human Control Active";
+                _humanControlledText.SetActive(true);
+                
+            }
+            
+        }
+
+        if(_totalHumanControl){
+            while (_mainThreadActions.Count > 0 && _mainThreadActions.TryDequeue(out Action action)){
+                print("Doing action (h) "+ action.ToString());
+                List<float> perception = _step.Step(action);
+                perception.Add(-1);
+                if(perception[0] != 0){
+                    SubmitHumanMove(Action.RESET);
+                }
+
+                _lastHumanPerception = perception;
+                print("Human Reading " + string.Join(",", perception));
+                return;
+            }
+            
+            return;
+        }
+
+        
         // Handle all callbacks in main thread
         while (_mainThreadActions.Count > 0 && _mainThreadActions.TryDequeue(out Action action))
         {
             print("Doing action "+ action.ToString());
             if(action == Action.HUMAN_MOVE_REQUESTED)
             {
+                _audioData.Play(0);
                 _manualMovement.enabled = true;
                 _humanControlledText.SetActive(true);
                 SendData(System.Text.Encoding.Default.GetBytes("ack control handoff"));
                 continue;
             }
+            _audioData.Stop();
 
             List<float> perception = _step.Step(action);
 
@@ -77,7 +130,7 @@ public class RLConnection : MonoBehaviour
                         break;
                     } 
                 }
-                 
+
                 if (bestWayPoint != -1)
                 {
                     float move = calcNextMove(_navMeshPath.corners[bestWayPoint]);
@@ -90,6 +143,8 @@ public class RLConnection : MonoBehaviour
             {
                 perception.Add(-1);
             }
+
+            _lastHumanPerception = perception;
 
             print("Sending " + string.Join(",", perception));
             SendData(System.Text.Encoding.Default.GetBytes(string.Join(",", perception)));
@@ -148,7 +203,7 @@ public class RLConnection : MonoBehaviour
     {
         //Check how much bytes are recieved and call EndRecieve to finalize handshake
         int recieved = _clientSocket.EndReceive(AR);
-
+        
         if (recieved <= 0)
             return;
 
@@ -160,7 +215,7 @@ public class RLConnection : MonoBehaviour
         string command = System.Text.Encoding.Default.GetString(_recieveBuffer);
         command = new string(command.Where(c => !char.IsControl(c)).ToArray());
         char[] commands = command.ToCharArray();
-        char firstCommand = commands[0];
+        char firstCommand = commands[0];        
         switch (firstCommand)
         {
             case 'f':
